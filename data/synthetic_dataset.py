@@ -10,10 +10,9 @@ THRESHOLD = 0.05
 
 class SyntheticDataset(object):
     """docstring for SyntheticDataset"""
-    def __init__(self, config, mode):
+    def __init__(self, config):
         super(SyntheticDataset, self).__init__()
         self.config = config
-        self.mode = mode
 
         self.dataset, self.key = self.load_dataset()
 
@@ -39,7 +38,7 @@ class SyntheticDataset(object):
 
 if __name__ == '__main__':
     config = Config('default.yml')
-    dataset = SyntheticDataset(config, 'train')
+    dataset = SyntheticDataset(config)
     import ipdb; ipdb.set_trace()
 
 

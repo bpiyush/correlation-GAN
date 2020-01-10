@@ -3,3 +3,7 @@ data_type: synthetic
 dataset_name: gaussian-2d
 dataset_version: v1
 rho: 0.5
+
+# training related 
+batch_size: 64
+num_workers: 10
