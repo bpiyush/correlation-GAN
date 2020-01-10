@@ -1,5 +1,7 @@
 import imageio
 import numpy as np
+import wandb
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 # from torchvision.utils import make_grid
@@ -18,7 +20,7 @@ from data.dataloader import create_data_loader
 logger = Logger()
 
 class WGAN_GP():
-    def __init__(self, generator, discriminator, g_optmizer, d_optimizer,
+    def __init__(self, config, generator, discriminator, g_optmizer, d_optimizer,
                  latent_shape, n_critic=2, gamma=10,
                  save_every=20, use_cuda=True, logdir=None):
 
@@ -26,7 +28,7 @@ class WGAN_GP():
         self.D = discriminator
         self.G_opt = g_optmizer
         self.D_opt = d_optimizer
-        attributes = ['latent_shape', 'n_critic', 'gamma', 'save_every', 'use_cuda']
+        attributes = ['config', 'latent_shape', 'n_critic', 'gamma', 'save_every', 'use_cuda']
         for attr in attributes:
             setattr(self, attr, eval(attr))
         # self.writer = SummaryWriter(logdir)
@@ -46,12 +48,15 @@ class WGAN_GP():
             logger.log('Starting epoch {}...'.format(epoch))
             self._train_epoch(data_loader)
 
+            self.update_wandb(epoch)
+
             # if epoch % self.save_every == 0 or epoch == n_epochs:
             #     torch.save(self.G.state_dict(), self.dataset_name + '_gen_{}.pt'.format(epoch))
             #     torch.save(self.D.state_dict(), self.dataset_name + '_disc_{}.pt'.format(epoch))
 
     def _train_epoch(self, data_loader):
-        for i, data_dict in enumerate(data_loader):
+        iterator = tqdm(enumerate(data_loader))
+        for i, data_dict in iterator:
             self.steps += 1
 
             data = data_dict['point']
@@ -72,7 +77,10 @@ class WGAN_GP():
                 # self.writer.add_scalars('losses', {'g_loss': g_loss}, self.steps)
                 self.hist[-1]['g_loss'] = g_loss
 
-        logger.log('g_loss: {:.3f} d_loss: {:.3f} grad_penalty: {:.3f}'.format(g_loss, d_loss, grad_penalty))
+                iterator.set_description('V {} | G: {:.3f} | D: {:.3f} | GP: {:.3f}'.format(self.config.version, g_loss, d_loss, grad_penalty))
+                iterator.refresh()
+
+        logger.log('Epoch completed => G: {:.3f} D: {:.3f} GP: {:.3f}'.format(g_loss, d_loss, grad_penalty))
 
     def _discriminator_train_step(self, data):
         batch_size = data.size(0)
@@ -128,6 +136,13 @@ class WGAN_GP():
             z = z.cuda()
         return self.G(z)
 
+    def update_wandb(self, epoch_number):
+        wandb.log(self.hist[epoch_number], step=epoch_number)
+        # d_loss = self.hist[epoch_number]['d_loss']
+        # grad_penalty = self.hist[epoch_number]['grad_penalty']
+        # if 'g_loss' in self.hist[epoch_number]:
+        #     g_loss = self.hist[epoch_number]['g_loss']
+
     # def _save_gif(self):
     #     grid = make_grid(self.G(self._fixed_z).cpu().data, normalize=True)
     #     grid = np.transpose(grid.numpy(), (1, 2, 0))
@@ -144,6 +159,10 @@ if __name__ == '__main__':
     config = Config('default.yml')
     dataloader = create_data_loader(config)
 
+    run_name = 'correlation-GAN_{}'.format(config.version)
+    wandb.init(name=run_name, dir=config.checkpoint_dir, notes=config.description)
+    wandb.config.update(config.__dict__)
+
     device = torch.device('cuda')
 
     use_dropout = [True, True, False]
@@ -158,11 +177,12 @@ if __name__ == '__main__':
     disc_fc_layers = [2, 32, 16, 1]
     discriminator = Discriminator(disc_fc_layers, use_dropout, drop_prob, use_ac_func, activation).to(device)
 
+    wandb.watch([generator, discriminator])
+
     g_optimizer = Adam(generator.parameters(), lr=1e-4, betas=(0.5, 0.9))
     d_optimizer = Adam(discriminator.parameters(), lr=1e-4, betas=(0.5, 0.9))
 
-    wgan_gp = WGAN_GP(generator, discriminator, g_optimizer, d_optimizer, latent_shape)
-    wgan_gp.train(dataloader, 100)
-    import ipdb; ipdb.set_trace()
+    wgan_gp = WGAN_GP(config, generator, discriminator, g_optimizer, d_optimizer, latent_shape)
+    wgan_gp.train(dataloader, 200)
 
 
