@@ -1,6 +1,8 @@
 import torch
 
-from generic import LinearModel
+import sys
+sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
+from networks.generic import LinearModel
 
 class Discriminator(LinearModel):
     """
