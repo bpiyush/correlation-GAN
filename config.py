@@ -1,5 +1,5 @@
 from os import makedirs
-from os.path import join, basename, expanduser
+from os.path import join, basename, expanduser, splitext
 
 from utils.constants import DATA_DIR
 from utils.io import read_yml
@@ -20,6 +20,12 @@ class Config(object):
 
         config_path = join(self.paths['HOME'], 'configs', version)
         self.__dict__.update(read_yml(config_path))
+
+        self.checkpoint_dir = join(self.paths['CKPT_DIR'], splitext(self.version)[0])
+        self.log_dir = join(self.paths['LOG_DIR'], self.version)
+
+        for path in [self.checkpoint_dir, self.log_dir]:
+            makedirs(path, exist_ok=True)
 
     def define_paths(self, username):
         HOME = USER_TO_HOME[username].format(username)
