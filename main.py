@@ -15,7 +15,6 @@ from networks.discriminator import Discriminator
 from models.wgan_gp import WGAN_GP
 
 import psutil
-# sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
 from utils.logger import Logger
 from data.dataloader import create_data_loader
 logger = Logger()
