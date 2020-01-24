@@ -6,6 +6,36 @@ dataset_name: gaussian-2d
 dataset_version: v1
 rho: 0.5
 
+data :
+  size      : 200
+  dimension : 2
+
 # training related 
-batch_size: 8
+batch_size : 64
 num_workers: 10
+num_epochs : 1000
+
+# system
+system:
+  use_cuda : true
+
+# model related configs
+model:
+  use_dropout : [True, True, False]
+  drop_prob   : [0.5, 0.5, 0.5]
+  use_ac_func : [True, True, False]
+  activation  : 'relu'
+  latent_dim  : 10
+  n_critic    : 2
+
+  generator_hidden_layers : [16, 32]
+  disc_hidden_layers      : [32, 16]
+
+hyperparams:
+  g_lr: 0.001
+  d_lr: 0.001
+  g_betas: [0.5, 0.9]
+  d_betas: [0.5, 0.9]
+  weight_decay : 0.0001
+
+  gamma : 10

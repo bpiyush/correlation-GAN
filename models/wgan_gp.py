@@ -8,6 +8,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torch import autograd
 from torch.optim import Adam
+from termcolor import colored
 # from tensorboardX import SummaryWriter
 
 import warnings
@@ -17,46 +18,86 @@ import sys
 sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
 from utils.logger import Logger
 from data.dataloader import create_data_loader
+from utils.visualize import plot_original_vs_generated
+from networks.generator import Generator
+from networks.discriminator import Discriminator
 logger = Logger()
 
-class WGAN_GP():
-    def __init__(self, config, generator, discriminator, g_optmizer, d_optimizer,
-                 latent_shape, n_critic=2, gamma=10,
-                 save_every=20, use_cuda=True, logdir=None):
+MAX_SAMPLES = 10000
 
-        self.G = generator
-        self.D = discriminator
-        self.G_opt = g_optmizer
-        self.D_opt = d_optimizer
-        attributes = ['config', 'latent_shape', 'n_critic', 'gamma', 'save_every', 'use_cuda']
-        for attr in attributes:
-            setattr(self, attr, eval(attr))
-        # self.writer = SummaryWriter(logdir)
+class WGAN_GP():
+    def __init__(self, config):
+
+        self.config = config
+        self.latent_dim = config.model['latent_dim']
+        self.n_critic = config.model['n_critic']
+        self.gamma = config.hyperparams['gamma']
+        self.use_cuda = config.system['use_cuda']
+
+        self.G, self.D, self.G_opt, self.D_opt = self._build_model()
+
         self.steps = 0
-        self._fixed_z = torch.randn(64, latent_shape)
+        self.max_samples = MAX_SAMPLES
+        if self.max_samples > config.data['size']:
+            self.max_samples = config.data['size']
+        self._fixed_z = torch.randn(self.max_samples, self.latent_dim)
         self.hist = []
-        # self.images = []
 
         if self.use_cuda:
             self._fixed_z = self._fixed_z.cuda()
             self.G.cuda()
             self.D.cuda()
 
+    def _build_model(self):
+        device = torch.device('cuda')
+
+        # model_attrs_from_config = ['use_dropout', 'drop_prob', 'use_ac_func', 'activation', 'latent_dim', 'generator_hidden_layers', 'disc_hidden_layers']
+        # for attr in model_attrs_from_config:
+        #     exec('{} = self.config.model["{}"]'.format(attr, attr))
+
+        data_dimension = self.config.data['dimension']
+        generator_hidden_layers = self.config.model['generator_hidden_layers']
+        use_dropout = self.config.model['use_dropout']
+        drop_prob = self.config.model['drop_prob']
+        use_ac_func = self.config.model['use_ac_func']
+        activation = self.config.model['activation']
+        disc_hidden_layers = self.config.model['disc_hidden_layers']
+
+        logger.log("Loading {} network ...".format(colored('generator', 'red')))
+        gen_fc_layers = [self.latent_dim, *generator_hidden_layers, data_dimension]
+        generator = Generator(gen_fc_layers, use_dropout, drop_prob, use_ac_func, activation).to(device)
+
+        logger.log("Loading {} network ...".format(colored('discriminator', 'red')))
+        disc_fc_layers = [data_dimension, *disc_hidden_layers, 1]
+        discriminator = Discriminator(disc_fc_layers, use_dropout, drop_prob, use_ac_func, activation).to(device)
+
+        wandb.watch([generator, discriminator])
+
+        g_optimizer, d_optimizer = self._setup_optimizers(generator, discriminator)
+
+        return generator, discriminator, g_optimizer, d_optimizer
+
+    def _setup_optimizers(self, generator, discriminator):
+        hparam_attrs_from_config = ['g_lr', 'g_betas', 'd_lr', 'd_betas']
+        for attr in hparam_attrs_from_config:
+            setattr(self, attr, self.config.hyperparams[attr])
+            # exec('{} = self.config.hyperparams["{}"]'.format(attr, attr))
+
+        g_optimizer = Adam(generator.parameters(), lr=self.g_lr, betas=tuple(self.g_betas), weight_decay=self.config.hyperparams['weight_decay'])
+        d_optimizer = Adam(discriminator.parameters(), lr=self.d_lr, betas=tuple(self.d_betas))
+
+        return g_optimizer, d_optimizer
+
     def train(self, data_loader, n_epochs):
-        # self._save_gif()
+
         for epoch in range(1, n_epochs + 1):
-            logger.log('Starting epoch {}...'.format(epoch))
+            logger.log('Starting epoch {}...'.format(colored(epoch, 'yellow')))
             self._train_epoch(data_loader)
-
-            self.update_wandb(epoch)
-
-            # if epoch % self.save_every == 0 or epoch == n_epochs:
-            #     torch.save(self.G.state_dict(), self.dataset_name + '_gen_{}.pt'.format(epoch))
-            #     torch.save(self.D.state_dict(), self.dataset_name + '_disc_{}.pt'.format(epoch))
+            self._update_wandb(data_loader, epoch)
 
     def _train_epoch(self, data_loader):
-        iterator = tqdm(enumerate(data_loader))
-        for i, data_dict in iterator:
+        iterator = tqdm(data_loader)
+        for data_dict in iterator:
             self.steps += 1
 
             data = data_dict['point']
@@ -65,19 +106,13 @@ class WGAN_GP():
                 data = data.cuda()
 
             d_loss, grad_penalty = self._discriminator_train_step(data)
-            # self.writer.add_scalars('losses', {'d_loss': d_loss, 'grad_penalty': grad_penalty}, self.steps)
             self.hist.append({'d_loss': d_loss, 'grad_penalty': grad_penalty})
-
-            # if i % 200 == 0:
-            #     img_grid = make_grid(self.G(self._fixed_z).cpu().data, normalize=True)
-            #     self.writer.add_image('images', img_grid, self.steps)
 
             if self.steps % self.n_critic == 0:
                 g_loss = self._generator_train_step(data.size(0))
-                # self.writer.add_scalars('losses', {'g_loss': g_loss}, self.steps)
                 self.hist[-1]['g_loss'] = g_loss
 
-                iterator.set_description('V {} | G: {:.3f} | D: {:.3f} | GP: {:.3f}'.format(self.config.version, g_loss, d_loss, grad_penalty))
+                iterator.set_description('Epoch: {} | V {} | G: {:.3f} | D: {:.3f} | GP: {:.3f}'.format(self.steps, self.config.version, g_loss, d_loss, grad_penalty))
                 iterator.refresh()
 
         logger.log('Epoch completed => G: {:.3f} D: {:.3f} GP: {:.3f}'.format(g_loss, d_loss, grad_penalty))
@@ -131,23 +166,21 @@ class WGAN_GP():
         return self.gamma * ((gradients_norm - 1) ** 2).mean()
 
     def _sample(self, n_samples):
-        z = Variable(torch.randn(n_samples, self.latent_shape))
+        z = Variable(torch.randn(n_samples, self.latent_dim))
         if self.use_cuda:
             z = z.cuda()
         return self.G(z)
 
-    def update_wandb(self, epoch_number):
+    def _update_wandb(self, data_loader, epoch_number):
         wandb.log(self.hist[epoch_number], step=epoch_number)
-        # d_loss = self.hist[epoch_number]['d_loss']
-        # grad_penalty = self.hist[epoch_number]['grad_penalty']
-        # if 'g_loss' in self.hist[epoch_number]:
-        #     g_loss = self.hist[epoch_number]['g_loss']
 
-    # def _save_gif(self):
-    #     grid = make_grid(self.G(self._fixed_z).cpu().data, normalize=True)
-    #     grid = np.transpose(grid.numpy(), (1, 2, 0))
-    #     self.images.append(grid)
-    #     imageio.mimsave('{}.gif'.format(self.dataset_name), self.images)
+        dataset = data_loader.dataset
+
+        indices = np.random.choice(len(dataset), size=min(len(dataset), self.max_samples), replace=False)
+        original_data = np.array([dataset[i]['point'].cpu().numpy() for i in indices])
+        generated_data = self.G(self._fixed_z).detach().cpu().numpy()
+
+        wandb.log({"Original vs Generated: Scatter plot": wandb.Image(plot_original_vs_generated(original_data, generated_data))})
 
 
 if __name__ == '__main__':
@@ -169,9 +202,9 @@ if __name__ == '__main__':
     drop_prob = [0.5, 0.5, 0.5]
     use_ac_func = [True, True, False]
     activation = 'relu'
-    latent_shape = 10
+    latent_dim = 10
 
-    gen_fc_layers = [latent_shape, 16, 32, 2]
+    gen_fc_layers = [latent_dim, 16, 32, 2]
     generator = Generator(gen_fc_layers, use_dropout, drop_prob, use_ac_func, activation).to(device)
 
     disc_fc_layers = [2, 32, 16, 1]
