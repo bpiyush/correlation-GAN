@@ -1,0 +1,16 @@
+numpy
+scipy
+scikit-learn
+imageio
+matplotlib
+torch==1.1.0
+torchvision==0.3.0
+pandas
+argparse
+tensorboardX
+ipdb
+pdb
+ipython
+seaborn
+tqdm
+wandb
