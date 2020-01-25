@@ -1,6 +1,9 @@
 # SFTP
 *sftp*
 
+# config files
+v*.yml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

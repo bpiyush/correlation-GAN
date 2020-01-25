@@ -3,6 +3,9 @@ sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
 from config import Config
 from os.path import join
 import torch
+import numpy as np
+import argparse
+from termcolor import colored
 
 from utils.io import load_pkl
 
@@ -24,6 +27,7 @@ class SyntheticDataset(object):
             if key == 'metainfo':
                 continue
             if self.config.data['rho'] - THRESHOLD < dataset[key]['rho'] <= self.config.data['rho'] + THRESHOLD:
+                print(colored("=> Loading 2D synthetic dataset with rho: {}".format(np.round(self.config.data['rho'], 3)), 'yellow'))
                 return dataset[key], key
 
         raise Exception('This dataset does not have any sub-dataset with given rho.')
@@ -37,7 +41,11 @@ class SyntheticDataset(object):
 
 
 if __name__ == '__main__':
-    config = Config('default.yml')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--conf', type=str, default='default.yml')
+    args = parser.parse_args()
+
+    config = Config(args.conf)
     dataset = SyntheticDataset(config)
     import ipdb; ipdb.set_trace()
 
