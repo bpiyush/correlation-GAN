@@ -65,8 +65,8 @@ if __name__ == '__main__':
     logger.log("Assembling {} model ...".format(colored('WGAN-GP', 'red')))
     wgan_gp = WGAN_GP(config)
 
-    logger.log("Starting training for {} epochs ...".format(config.num_epochs))
-    wgan_gp.train(dataloader, config.num_epochs)
+    logger.log("Starting training for {} epochs ...".format(config.training['num_epochs']))
+    wgan_gp.train(dataloader, config.training['num_epochs'])
 
     import ipdb; ipdb.set_trace()
 

@@ -51,10 +51,6 @@ class WGAN_GP():
     def _build_model(self):
         device = torch.device('cuda')
 
-        # model_attrs_from_config = ['use_dropout', 'drop_prob', 'use_ac_func', 'activation', 'latent_dim', 'generator_hidden_layers', 'disc_hidden_layers']
-        # for attr in model_attrs_from_config:
-        #     exec('{} = self.config.model["{}"]'.format(attr, attr))
-
         data_dimension = self.config.data['dimension']
         generator_hidden_layers = self.config.model['generator_hidden_layers']
         use_dropout = self.config.model['use_dropout']

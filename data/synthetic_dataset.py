@@ -17,13 +17,13 @@ class SyntheticDataset(object):
         self.dataset, self.key = self.load_dataset()
 
     def load_dataset(self):
-        dataset_path = join(self.config.paths['DATA_DIR'], self.config.data_type, self.config.dataset_name, self.config.dataset_version + '.pkl')
+        dataset_path = join(self.config.paths['DATA_DIR'], self.config.data['type'], self.config.data['name'], self.config.data['version'] + '.pkl')
         dataset = load_pkl(dataset_path)
 
         for key in dataset:
             if key == 'metainfo':
                 continue
-            if self.config.rho - THRESHOLD < dataset[key]['rho'] <= self.config.rho + THRESHOLD:
+            if self.config.data['rho'] - THRESHOLD < dataset[key]['rho'] <= self.config.data['rho'] + THRESHOLD:
                 return dataset[key], key
 
         raise Exception('This dataset does not have any sub-dataset with given rho.')

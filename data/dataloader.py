@@ -7,12 +7,12 @@ from data.synthetic_dataset import SyntheticDataset
 
 
 def create_data_loader(config, drop_last=True, shuffle=True):
-    if config.data_type == 'synthetic':
+    if config.data['type'] == 'synthetic':
         dataset = SyntheticDataset(config)
     else:
         NotImplementedError
-    dataloader = DataLoader(dataset=dataset, batch_size=config.batch_size, shuffle=shuffle,
-                            drop_last=drop_last, pin_memory=True, num_workers=config.num_workers)
+    dataloader = DataLoader(dataset=dataset, batch_size=config.training['batch_size'], shuffle=shuffle,
+                            drop_last=drop_last, pin_memory=True, num_workers=config.system['num_workers'])
 
     return dataloader
 
