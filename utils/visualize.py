@@ -1,5 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from termcolor import colored
+
+def colored_print(string, color='yellow'):
+    print(colored(string, color))
+
 
 def fig2data(fig):
     """
