@@ -68,6 +68,4 @@ if __name__ == '__main__':
     logger.log("Starting training for {} epochs ...".format(config.training['num_epochs']))
     wgan_gp.train(dataloader, config.training['num_epochs'])
 
-    import ipdb; ipdb.set_trace()
-
 
