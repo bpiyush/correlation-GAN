@@ -26,6 +26,11 @@ class Config(object):
         self.checkpoint_dir = join(self.paths['CKPT_DIR'], splitext(self.version)[0])
         self.log_dir = join(self.paths['LOG_DIR'], self.version)
 
+        self.data['sample_num'] = self.__dict__.get('data').get('sample_num', 500)
+        self.data['sample_run'] = self.__dict__.get('data').get('sample_run', False)
+        if self.data['sample_run']:
+            self.data['size'] = self.data['sample_num']
+
         for path in [self.checkpoint_dir, self.log_dir]:
             makedirs(path, exist_ok=True)
 

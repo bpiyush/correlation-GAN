@@ -8,11 +8,13 @@ data :
   size      : 5000
   dimension : 2
   rho       : 0.5
+  sample_run: true
+  sample_num: 500
 
 # training related
 training :
-  batch_size : 64
-  num_epochs : 500
+  batch_size : 128
+  num_epochs : 5
 
 # system
 system:

@@ -31,7 +31,10 @@ class SyntheticDataset(object):
                 continue
             if self.config.data['rho'] - THRESHOLD < dataset[key]['rho'] <= self.config.data['rho'] + THRESHOLD:
                 print(colored("=> Loading 2D synthetic dataset with rho: {}".format(np.round(self.config.data['rho'], 3)), 'yellow'))
-                return dataset[key], key
+
+                if self.config.data['sample_run']:
+                    dataset[key]['data'] = dataset[key]['data'][:self.config.data['sample_num']]
+                    return dataset[key], key
 
         raise Exception('This dataset does not have any sub-dataset with given rho.')
 

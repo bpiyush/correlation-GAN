@@ -8,6 +8,8 @@ data :
   size      : 200
   dimension : 2
   rho       : 0.5
+  sample_run: false
+  sample_num: 500
 
 # training related
 training :
