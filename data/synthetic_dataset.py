@@ -19,6 +19,9 @@ class SyntheticDataset(object):
 
         self.dataset, self.key = self.load_dataset()
 
+        self.data_dimension = self.config.data['dimension']
+        self.input_image_side = int(np.ceil(np.sqrt(self.data_dimension)))
+
     def load_dataset(self):
         dataset_path = join(self.config.paths['DATA_DIR'], self.config.data['type'], self.config.data['name'], self.config.data['version'] + '.pkl')
         dataset = load_pkl(dataset_path)
@@ -32,21 +35,38 @@ class SyntheticDataset(object):
 
         raise Exception('This dataset does not have any sub-dataset with given rho.')
 
+    def squarify_tensor(self, tensor, out_image_side):
+        assert tensor.dtype == torch.float32 and isinstance(out_image_side, int)
+
+        flattened_image = torch.zeros(out_image_side * out_image_side).float()
+        flattened_image[:tensor.shape[0]] = tensor
+        image = flattened_image.reshape((self.input_image_side, self.input_image_side))
+
+        return image
+
     def __len__(self):
         """Returns number of examples in dataset object"""
         return self.dataset['data'].shape[0]
 
     def __getitem__(self, index):
-        return {'point': torch.tensor(self.dataset['data'].values[index]).float()}
+
+        if self.config.arch == 'wgan_gp':
+            return {'point': torch.tensor(self.dataset['data'].values[index]).float()}
+        elif self.config.arch == 'dcgan':
+            input_ = torch.tensor(self.dataset['data'].values[index]).float()
+            image = self.squarify_tensor(input_, self.input_image_side)
+            return {'image': image.unsqueeze(0)} # Send out (1, side, side) sized image
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--conf', type=str, default='default.yml')
+    parser.add_argument('-a', '--arch', type=str, default='wgan_gp', choices=['wgan_gp', 'dcgan'])
     args = parser.parse_args()
 
-    config = Config(args.conf)
+    config = Config(args.conf, args.arch)
     dataset = SyntheticDataset(config)
-    import ipdb; ipdb.set_trace()
 
+    instance = dataset[0]
+    import ipdb; ipdb.set_trace()
 

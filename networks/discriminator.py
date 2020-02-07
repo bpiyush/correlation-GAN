@@ -42,15 +42,18 @@ class ConvDiscriminator(nn.Module):
             self.conv_net.add_module(name=name % 'batch_norm_layer', module=batch_norm_layer)
             self.conv_net.add_module(name=name % 'activation', module=activation)
 
-    def forward(self, image):
+    def forward(self, image, return_logits=False):
         conv_output = self.conv_net(image)
         prod_of_other_dims = np.prod(np.array([*conv_output.shape[1:]]))
         conv_output = conv_output.reshape((-1, prod_of_other_dims))
         self.linear = nn.Linear(in_features=prod_of_other_dims, out_features=1)
-        y = self.sigmoid(self.linear(conv_output))
+        logits = self.linear(conv_output)
+        y = self.sigmoid(logits)
 
-        return y
-
+        if return_logits:
+            return y, logits
+        else:
+            return y
 
     def batch_norm(self, output_dim, eps=1e-5, momentum=0.9):
         return nn.BatchNorm2d(output_dim, eps=eps, momentum=momentum)

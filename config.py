@@ -1,3 +1,4 @@
+import argparse
 from os import makedirs
 from os.path import join, basename, expanduser, splitext
 
@@ -11,14 +12,15 @@ USER_TO_HOME = {
 
 class Config(object):
     """docstring for Config"""
-    def __init__(self, version):
+    def __init__(self, version, arch):
         super(Config, self).__init__()
         self.version = version
+        self.arch = arch
 
         username = expanduser('~').split('/')[-1]
         self.paths = self.define_paths(username)
 
-        config_path = join(self.paths['HOME'], 'configs', version)
+        config_path = join(self.paths['HOME'], 'configs', arch, version)
         self.__dict__.update(read_yml(config_path))
 
         self.checkpoint_dir = join(self.paths['CKPT_DIR'], splitext(self.version)[0])
@@ -44,5 +46,10 @@ class Config(object):
         return dir_dict
 
 if __name__ == '__main__':
-    config = Config('default.yml')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--conf', type=str, default='default.yml')
+    parser.add_argument('-a', '--arch', type=str, default='wgan_gp', choices=['wgan_gp', 'dcgan'])
+    args = parser.parse_args()
+
+    config = Config(args.conf, args.arch)
     import ipdb; ipdb.set_trace()
