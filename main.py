@@ -13,6 +13,7 @@ from data.synthetic_dataset import SyntheticDataset
 from networks.generator import Generator
 from networks.discriminator import Discriminator
 from models.wgan_gp import WGAN_GP
+from models.dcgan import DCGAN
 
 import psutil
 from utils.logger import Logger
@@ -49,23 +50,30 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--version', type=str, required=True, help='version of the config')
+    parser.add_argument('-a', '--arch', type=str, choices=['dcgan', 'wgan_gp'], required=True, help='model architecture to be used')
     parser.add_argument('-cpu', '--cpu_range', nargs='*', type=int, required=True, help='start and end index of CPUs to be used: Example: 1 10')
     args = parser.parse_args()
 
     start, end = args.cpu_range
     set_cpu_limit(start, end)
 
-    config = Config(args.version)
+    config = Config(args.version, args.arch)
     dataloader = create_data_loader(config)
 
-    run_name = 'correlation-GAN_{}'.format(config.version)
-    wandb.init(name=run_name, dir=config.checkpoint_dir, notes=config.description)
+    run_name = 'correlation-GAN_{}_{}'.format(config.arch, config.version)
+    os.environ['WANDB_ENTITY'] = "wadhwani"
+    os.environ['WANDB_PROJECT'] = "correlation-GAN"
+    run_dir = config.checkpoint_dir
+    os.environ['WANDB_DIR'] = run_dir
+
+    wandb.init(name=run_name, dir=run_dir, notes=config.description)
     wandb.config.update(config.__dict__)
 
-    logger.log("Assembling {} model ...".format(colored('WGAN-GP', 'red')))
-    wgan_gp = WGAN_GP(config)
+    architecture = eval(config.arch.upper())
+    logger.log("Assembling {} model ...".format(colored(config.arch.upper(), 'red')))
+    model = architecture(config)
 
     logger.log("Starting training for {} epochs ...".format(config.training['num_epochs']))
-    wgan_gp.train(dataloader, config.training['num_epochs'])
+    model.train(dataloader, config.training['num_epochs'])
 
 

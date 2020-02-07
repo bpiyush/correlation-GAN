@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from termcolor import colored
+from scipy.stats import pearsonr as correlation
 
 def colored_print(string, color='yellow'):
     print(colored(string, color))
@@ -39,11 +40,13 @@ def plot_original_vs_generated(original_data, generated_data):
     """Predicted vs ground truth weight"""
 
     assert len(original_data.shape) == 2 and len(generated_data.shape) == 2
+    original_correlation = np.round(correlation(original_data[:, 0], original_data[:, 1])[0], 3)
+    generated_correlation = np.round(correlation(generated_data[:, 0], generated_data[:, 1])[0], 3)
 
     fig, ax = plt.subplots(1, figsize=(5, 5))
     ax.grid()
-    ax.scatter(original_data[:, 0], original_data[:, 1], label='Original')
-    ax.scatter(generated_data[:, 0], generated_data[:, 1], label='Generated')
+    ax.scatter(original_data[:, 0], original_data[:, 1], label=r'Original ($\rho = {}$)'.format(original_correlation))
+    ax.scatter(generated_data[:, 0], generated_data[:, 1], label=r'Generated ($\rho = {}$)'.format(generated_correlation))
     ax.legend()
 
     ax.set_xlabel('X1')

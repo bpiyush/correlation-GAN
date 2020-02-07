@@ -22,7 +22,7 @@ from networks.discriminator import ConvDiscriminator
 logger = Logger()
 
 MAX_SAMPLES = 10000
-WANDB_LOG_GAP = 10
+WANDB_LOG_GAP = 1
 
 class DCGAN(object):
     """docstring for DCGAN"""
@@ -61,8 +61,6 @@ class DCGAN(object):
         if self.use_cuda:
             self.fixed_Z = self.fixed_Z.to(self.device)
 
-        self.wandb_steps = 0
-
     def get_input_image_dimension(self, data_dimension):
         return int(np.ceil(np.sqrt(data_dimension)))
 
@@ -91,18 +89,23 @@ class DCGAN(object):
 
     def train(self, data_loader, n_epochs):
 
-        self.global_steps = 0
+        self.global_num_iters = 0
 
-        for epoch in range(1, n_epochs + 1):
-            logger.log('Starting epoch {}...'.format(colored(epoch, 'yellow')))
-            self._train_epoch(data_loader, epoch)
+        for epoch_num in range(1, n_epochs + 1):
+            logger.log('Starting epoch {}...'.format(colored(epoch_num, 'yellow')))
+            self._train_epoch(data_loader, epoch_num)
 
     def _train_epoch(self, data_loader, epoch):
         self.d_steps, self.g_steps = 0, 0
         epoch_d_loss, epoch_g_loss = 0.0, 0.0
         iterator = tqdm(data_loader)
+        num_iteratrions_per_epoch = len(data_loader.dataset)
 
         for data_dict in iterator:
+
+            self.global_num_iters += 1
+            wandb_logs = {}
+
             self.d_steps += 1
 
             X = data_dict['image']
@@ -123,18 +126,17 @@ class DCGAN(object):
                 self.g_steps += 1
                 g_loss = loss_dict['g_loss']; epoch_g_loss += g_loss;
 
-                self.global_steps += 1
-                wandb.log(loss_dict, step=self.global_steps)
-
                 iterator.set_description('Epoch: {} | {} | V {} | G: {:.3f} | D: {:.3f}'.format(epoch, self.config.arch, self.config.version, g_loss, d_loss))
                 iterator.refresh()
 
-            if self.wandb_steps % WANDB_LOG_GAP == 0:
-                self.wandb_steps += 1
-                self._update_wandb(data_loader)
+            wandb_logs.update(loss_dict)
+
+            figure = self._get_scatter_plot(data_loader)
+            wandb_logs.update({"Original vs Generated: Scatter plot": wandb.Image(figure)})
+            wandb.log(wandb_logs, step=self.global_num_iters)
 
         epoch_d_loss /= self.d_steps; epoch_g_loss /= self.g_steps;
-        logger.log('Epoch completed => G: {:.3f} D: {:.3f}'.format(epoch_g_loss, epoch_d_loss))
+        logger.log(colored('Epoch completed => G: {:.3f} D: {:.3f}'.format(epoch_g_loss, epoch_d_loss), 'blue'))
 
     def _train_step(self, X, Z):
 
@@ -198,13 +200,13 @@ class DCGAN(object):
             tensor = image.reshape((image.shape[0], -1))
             return tensor[:, :self.dimension]
 
-    def _update_wandb(self, data_loader, samples_to_visualize=500, seed=0):
+    def _get_scatter_plot(self, data_loader, samples_to_visualize=200, seed=0):
 
         dataset = data_loader.dataset
 
         # Fix the seed since we need the same original data across epochs
         np.random.seed(seed)
-        indices = np.random.choice(len(dataset), size=samples_to_visualize, replace=False)
+        indices = np.random.choice(self.size, size=samples_to_visualize, replace=False)
 
         X = np.array([self.flatten_image(dataset[i]['image']).cpu().numpy() for i in indices])
 
@@ -212,7 +214,7 @@ class DCGAN(object):
         G_Z = self.flatten_image(self.G(Z)).detach().cpu().numpy()
 
         figure = plot_original_vs_generated(X, G_Z)
-        wandb.log({"Original vs Generated: Scatter plot": wandb.Image(figure)}, step=self.wandb_steps)
+        return figure
 
 
 if __name__ == '__main__':
@@ -223,7 +225,11 @@ if __name__ == '__main__':
     dataloader = create_data_loader(config)
 
     run_name = 'correlation-GAN_{}_{}'.format(config.arch, config.version)
-    wandb.init(name=run_name, dir=config.checkpoint_dir, notes=config.description)
+    os.environ['WANDB_ENTITY'] = "wadhwani"
+    os.environ['WANDB_PROJECT'] = "correlation-GAN"
+    run_dir = config.checkpoint_dir
+    os.environ['WANDB_DIR'] = run_dir
+    wandb.init(name=run_name, dir=run_dir, notes=config.description)
     wandb.config.update(config.__dict__)
 
     dcgan = DCGAN(config)
