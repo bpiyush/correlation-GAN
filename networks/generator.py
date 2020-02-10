@@ -46,6 +46,8 @@ class DeconvGenerator(nn.Module):
         self.projector = nn.Linear(in_features=noise_dim, out_features=out_features)
         self.projector_batch_norm = self.batch_norm(self.size_dict[0]['channels'])
         self.relu = nn.ReLU(True)
+        self.lrelu = nn.LeakyReLU(True)
+        self.prelu = nn.PReLU()
         self.tanh = nn.Tanh()
 
         self.deconv_net = nn.Sequential()
@@ -60,7 +62,7 @@ class DeconvGenerator(nn.Module):
             self.deconv_net.add_module(name='batch_norm_layer_{}'.format(i + 1), module=batch_norm_layer)
 
             if i < num_layers - 2:
-                self.deconv_net.add_module(name='activation_{}'.format(i + 1), module=self.relu)
+                self.deconv_net.add_module(name='activation_{}'.format(i + 1), module=self.lrelu)
 
         self.deconv_net.add_module(name='activation_{}'.format(num_layers - 1), module=self.tanh)
 

@@ -6,6 +6,8 @@ import torch
 import numpy as np
 import argparse
 from termcolor import colored
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.pipeline import Pipeline
 
 from utils.io import load_pkl
 
@@ -17,10 +19,12 @@ class SyntheticDataset(object):
         super(SyntheticDataset, self).__init__()
         self.config = config
 
+        self.preprocessor = Pipeline([('standard scaler', StandardScaler()), ('minmax scaler', MinMaxScaler(feature_range=(-1.0, 1.0)))])
         self.dataset, self.key = self.load_dataset()
 
         self.data_dimension = self.config.data['dimension']
         self.input_image_side = int(np.ceil(np.sqrt(self.data_dimension)))
+
 
     def load_dataset(self):
         dataset_path = join(self.config.paths['DATA_DIR'], self.config.data['type'], self.config.data['name'], self.config.data['version'] + '.pkl')
@@ -32,9 +36,14 @@ class SyntheticDataset(object):
             if self.config.data['rho'] - THRESHOLD < dataset[key]['rho'] <= self.config.data['rho'] + THRESHOLD:
                 print(colored("=> Loading 2D synthetic dataset with rho: {}".format(np.round(self.config.data['rho'], 3)), 'yellow'))
 
+                loaded_data, loaded_key = dataset[key], key
                 if self.config.data['sample_run']:
                     dataset[key]['data'] = dataset[key]['data'][:self.config.data['sample_num']]
-                    return dataset[key], key
+                    loaded_data, loaded_key = dataset[key], key
+
+                self.preprocessor.fit(loaded_data['data'].values)
+
+                return loaded_data, loaded_key
 
         raise Exception('This dataset does not have any sub-dataset with given rho.')
 
@@ -56,6 +65,7 @@ class SyntheticDataset(object):
         if self.config.arch == 'wgan_gp':
             return {'point': torch.tensor(self.dataset['data'].values[index]).float()}
         elif self.config.arch == 'dcgan':
+            input_ = self.preprocessor.transform(self.dataset['data'].values[index].reshape(1, -1)).reshape(self.data_dimension)
             input_ = torch.tensor(self.dataset['data'].values[index]).float()
             image = self.squarify_tensor(input_, self.input_image_side)
             return {'image': image.unsqueeze(0)} # Send out (1, side, side) sized image

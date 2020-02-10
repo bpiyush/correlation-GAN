@@ -200,6 +200,12 @@ class DCGAN(object):
             tensor = image.reshape((image.shape[0], -1))
             return tensor[:, :self.dimension]
 
+
+    def postprocess(self, data_loader, X):
+        dataset = data_loader.dataset
+        return dataset.preprocessor.inverse_transform(X)
+        
+
     def _get_scatter_plot(self, data_loader, samples_to_visualize=200, seed=0):
 
         dataset = data_loader.dataset
@@ -212,6 +218,7 @@ class DCGAN(object):
 
         Z = self.fixed_Z[indices]
         G_Z = self.flatten_image(self.G(Z)).detach().cpu().numpy()
+        X_ = self.postprocess(data_loader, G_Z)
 
         figure = plot_original_vs_generated(X, G_Z)
         return figure

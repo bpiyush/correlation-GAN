@@ -26,7 +26,7 @@ model:
   num_channels_first    : 64
   num_channels_prefinal : 64
   noise_dim             : 10
-  n_critic              : 2
+  n_critic              : 1
   num_layers            : 4
 
   generator_hidden_layers : [16, 32]
@@ -34,8 +34,8 @@ model:
 
 # hyperameters
 hyperparams:
-  g_lr         : 0.001
-  d_lr         : 0.001
+  g_lr         : 0.0001
+  d_lr         : 0.0001
   g_betas      : [0.5, 0.9]
   d_betas      : [0.5, 0.9]
   g_weight_decay : 0.0001
