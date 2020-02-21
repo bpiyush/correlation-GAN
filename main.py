@@ -26,7 +26,8 @@ def set_cpu_limit(start, end):
     curr_cpus = process.cpu_affinity()
     new_cpus = range(start, end)
 
-    print(colored("=> You were using {} CPUs. Setting {} CPUs based on your input.".format(len(curr_cpus), len(new_cpus)), 'yellow'))
+    print(colored("=> You were using {} CPUs. Setting {} CPUs based on \
+        your input.".format(len(curr_cpus), len(new_cpus)), 'yellow'))
     process.cpu_affinity(list(new_cpus))
 
 
@@ -45,26 +46,36 @@ def seed_everything(seed=0, harsh=False):
     os.environ['PYTHONHASHSEED'] = str(seed)
 
 
+def setup_wandb_credentials(username, project, run_dir):
+    os.environ['WANDB_ENTITY'] = username
+    os.environ['WANDB_PROJECT'] = project
+    os.environ['WANDB_DIR'] = run_dir
+
+
 if __name__ == '__main__':
     seed_everything()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--version', type=str, required=True, help='version of the config')
-    parser.add_argument('-a', '--arch', type=str, choices=['dcgan', 'wgan_gp'], required=True, help='model architecture to be used')
-    parser.add_argument('-cpu', '--cpu_range', nargs='*', type=int, required=True, help='start and end index of CPUs to be used: Example: 1 10')
+    parser.add_argument('-v', '--version', type=str, required=True,
+                        help='version of the config')
+    parser.add_argument('-a', '--arch', type=str, choices=['dcgan', 'wgan_gp'],
+                        required=True, help='model architecture to be used')
+    parser.add_argument('-cpu', '--cpu_range', nargs='*', type=int, required=True,
+                        help='start and end index of CPUs to be used: Example: 1 10')
     args = parser.parse_args()
 
+    # Setup CPU limit
     start, end = args.cpu_range
     set_cpu_limit(start, end)
 
+    # Setup config
     config = Config(args.version, args.arch)
     dataloader = create_data_loader(config)
 
+    # Setup W&B credentials
     run_name = 'correlation-GAN_{}_{}'.format(config.arch, config.version)
-    os.environ['WANDB_ENTITY'] = "wadhwani"
-    os.environ['WANDB_PROJECT'] = "correlation-GAN"
-    run_dir = config.checkpoint_dir
-    os.environ['WANDB_DIR'] = run_dir
+    username, project, run_dir = "bpiyush", "correlation-GAN", config.checkpoint_dir
+    setup_wandb_credentials(username, project, run_dir)
 
     wandb.init(name=run_name, dir=run_dir, notes=config.description)
     wandb.config.update(config.__dict__)

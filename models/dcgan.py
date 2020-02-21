@@ -117,7 +117,7 @@ class DCGAN(object):
 
             if self.use_cuda:
                 X = X.to(self.device)
-                X = X.to(self.device)
+                Z = Z.to(self.device)
 
             loss_dict = self._train_step(X, Z)
 
@@ -220,7 +220,7 @@ class DCGAN(object):
         G_Z = self.flatten_image(self.G(Z)).detach().cpu().numpy()
         X_ = self.postprocess(data_loader, G_Z)
 
-        figure = plot_original_vs_generated(X, G_Z)
+        figure = plot_original_vs_generated(X, X_)
         return figure
 
 
