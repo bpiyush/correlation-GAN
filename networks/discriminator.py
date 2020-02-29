@@ -18,10 +18,10 @@ class Discriminator(LinearModel):
     def forward(self, inputs):
         return self.fc_blocks(inputs)
 
-class ConvDiscriminator(nn.Module):
-    """docstring for ConvDiscriminator"""
+class DCDiscriminator(nn.Module):
+    """docstring for DCDiscriminator"""
     def __init__(self, num_channels_first=64, num_layers=4, input_image_channels=1):
-        super(ConvDiscriminator, self).__init__()
+        super(DCDiscriminator, self).__init__()
 
         self.lrelu = nn.LeakyReLU()
         self.sigmoid = nn.Sigmoid()
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         assert disc_output.shape == (1, out_dim)
 
     else:
-        discriminator = ConvDiscriminator()
+        discriminator = DCDiscriminator()
 
         input_image_ht, input_image_wt = 64, 64
         image = torch.rand([1, 1, input_image_ht, input_image_wt])

@@ -24,12 +24,12 @@ def conv_out_size_same(size, stride):
     return int(math.ceil(float(size) / float(stride)))
 
 
-class DeconvGenerator(nn.Module):
+class DCGenerator(nn.Module):
     """
     Class definition of DCGAN generator
     """
     def __init__(self, out_h, out_w, noise_dim, num_channels_prefinal, num_layers=4):
-        super(DeconvGenerator, self).__init__()
+        super(DCGenerator, self).__init__()
 
         self.num_layers = num_layers
         self.noise_dim = noise_dim
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     else:
         out_h, out_w = 16, 16
         noise_dim = 100
-        generator = DeconvGenerator(out_h=out_h, out_w=out_w, noise_dim=noise_dim, num_channels_prefinal=64)
+        generator = DCGenerator(out_h=out_h, out_w=out_w, noise_dim=noise_dim, num_channels_prefinal=64)
         z = torch.rand((1, noise_dim))
         image = generator(z)
 

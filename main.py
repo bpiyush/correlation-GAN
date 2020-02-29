@@ -26,8 +26,8 @@ def set_cpu_limit(start, end):
     curr_cpus = process.cpu_affinity()
     new_cpus = range(start, end)
 
-    print(colored("=> You were using {} CPUs. Setting {} CPUs based on \
-        your input.".format(len(curr_cpus), len(new_cpus)), 'yellow'))
+    output = "=> You were using {} CPUs. Setting {} CPUs based on your input."
+    print(colored(output.format(len(curr_cpus), len(new_cpus)), 'yellow'))
     process.cpu_affinity(list(new_cpus))
 
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     username, project, run_dir = "bpiyush", "correlation-GAN", config.checkpoint_dir
     setup_wandb_credentials(username, project, run_dir)
 
-    wandb.init(name=run_name, dir=run_dir, notes=config.description)
+    wandb.init(name=run_name, dir=run_dir, notes=config.description, entity=username)
     wandb.config.update(config.__dict__)
 
     architecture = eval(config.arch.upper())

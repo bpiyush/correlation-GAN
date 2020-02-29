@@ -17,8 +17,8 @@ sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
 from utils.logger import Logger
 from data.dataloader import create_data_loader
 from utils.visualize import plot_original_vs_generated
-from networks.generator import DeconvGenerator
-from networks.discriminator import ConvDiscriminator
+from networks.generator import DCGenerator
+from networks.discriminator import DCDiscriminator
 logger = Logger()
 
 MAX_SAMPLES = 10000
@@ -69,13 +69,35 @@ class DCGAN(object):
         for attr in attributes:
             setattr(self, attr, section[attr])
 
+    # custom weights initialization called on G and D
+    def weights_init(self, m):
+        classname = m.__class__.__name__
+        if classname.find('Conv') != -1:
+            nn.init.normal_(m.weight.data, 0.0, 0.02)
+        elif classname.find('BatchNorm') != -1:
+            nn.init.normal_(m.weight.data, 1.0, 0.02)
+            nn.init.constant_(m.bias.data, 0)
+        elif classname.find('Linear') != -1:
+            nn.init.normal_(m.weight.data, 0.0, 0.02)
+
     def _build_model(self):
 
         logger.log("Loading {} network ...".format(colored('deconvolutional generator', 'red')))
-        self.G = DeconvGenerator(self.out_h, self.out_w, self.noise_dim, self.num_channels_prefinal, num_layers=self.num_layers)
+        self.G = DCGenerator(self.out_h, self.out_w, self.noise_dim, self.num_channels_prefinal, num_layers=self.num_layers)
+
+        # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
+        self.G.apply(self.weights_init)
+
+        self.G = self.G.train()
+
 
         logger.log("Loading {} network ...".format(colored('convolutional discriminator', 'red')))
-        self.D = ConvDiscriminator(num_channels_first=self.num_channels_first, num_layers=self.num_layers)
+        self.D = DCDiscriminator(num_channels_first=self.num_channels_first, num_layers=self.num_layers)
+
+        # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
+        self.D.apply(self.weights_init)
+
+        self.D = self.D.train()
 
         wandb.watch([self.G, self.D])
 
@@ -207,6 +229,9 @@ class DCGAN(object):
         
 
     def _get_scatter_plot(self, data_loader, samples_to_visualize=200, seed=0):
+
+        # setting up models for evaluation
+        self.G = self.G.eval()
 
         dataset = data_loader.dataset
 
