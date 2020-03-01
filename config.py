@@ -31,6 +31,10 @@ class Config(object):
         if self.data['sample_run']:
             self.data['size'] = self.data['sample_num']
 
+        # set defaults for model decisions
+        self.model['use_batch_norm'] = self.__dict__.get('model').get('use_batch_norm', True)
+        self.model['use_init'] = self.__dict__.get('model').get('use_init', True)
+
         for path in [self.checkpoint_dir, self.log_dir]:
             makedirs(path, exist_ok=True)
 

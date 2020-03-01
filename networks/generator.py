@@ -28,7 +28,7 @@ class DCGenerator(nn.Module):
     """
     Class definition of DCGAN generator
     """
-    def __init__(self, out_h, out_w, noise_dim, num_channels_prefinal, num_layers=4):
+    def __init__(self, out_h, out_w, noise_dim, num_channels_prefinal, use_batch_norm, num_layers=4):
         super(DCGenerator, self).__init__()
 
         self.num_layers = num_layers
@@ -43,28 +43,36 @@ class DCGenerator(nn.Module):
 
         out_features = 4 * num_channels_prefinal * self.size_dict[0]['height'] * self.size_dict[0]['width']
 
-        self.projector = nn.Linear(in_features=noise_dim, out_features=out_features)
-        self.projector_batch_norm = self.batch_norm(self.size_dict[0]['channels'])
-        self.relu = nn.ReLU(True)
-        self.lrelu = nn.LeakyReLU(True)
-        self.prelu = nn.PReLU()
-        self.tanh = nn.Tanh()
+        linear_layer = nn.Linear(in_features=noise_dim, out_features=out_features)
+        batch_norm_for_linear_layer = self.batch_norm(self.size_dict[0]['channels'])
+
+        lrelu = nn.LeakyReLU(True)
+        tanh = nn.Tanh()
+
+        self.projector = nn.Sequential()
+        self.projector.add_module(name='linear_layer', module=linear_layer)
+        if use_batch_norm:
+            self.projector.add_module(name='bn_for_linear_layer', module=batch_norm_for_linear_layer)
+        self.projector.add_module(name='activation_for_linear_layer', module=lrelu)
 
         self.deconv_net = nn.Sequential()
         for i in range(num_layers - 1):
             in_channels = self.size_dict[i]['channels']
             out_channels = self.size_dict[i + 1]['channels']
+
             # padding and output_padding are chosen to make sure we get output sizes as per self.size_dict
-            deconv_layer = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=5, stride=2, padding=2, output_padding=1)
+            deconv_layer = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels,
+                                              kernel_size=5, stride=2, padding=2, output_padding=1)
             self.deconv_net.add_module(name="deconv_layer_{}".format(i + 1), module=deconv_layer)
 
-            batch_norm_layer = self.batch_norm(out_channels)
-            self.deconv_net.add_module(name='batch_norm_layer_{}'.format(i + 1), module=batch_norm_layer)
+            if use_batch_norm:
+                batch_norm_layer = self.batch_norm(out_channels)
+                self.deconv_net.add_module(name='batch_norm_layer_{}'.format(i + 1), module=batch_norm_layer)
 
             if i < num_layers - 2:
-                self.deconv_net.add_module(name='activation_{}'.format(i + 1), module=self.lrelu)
+                self.deconv_net.add_module(name='activation_{}'.format(i + 1), module=lrelu)
 
-        self.deconv_net.add_module(name='activation_{}'.format(num_layers - 1), module=self.tanh)
+        self.deconv_net.add_module(name='activation_{}'.format(num_layers - 1), module=tanh)
 
 
     def batch_norm(self, output_dim, eps=1e-5, momentum=0.9):
@@ -76,8 +84,8 @@ class DCGenerator(nn.Module):
 
         x = self.projector(z)
         x = x.reshape((-1, self.size_dict[0]['channels'], self.size_dict[0]['height'], self.size_dict[0]['width']))
-        x = self.projector_batch_norm(x)
-        x = self.relu(x)
+        # x = self.projector_batch_norm(x)
+        # x = self.relu(x)
 
         out = self.deconv_net(x)
 

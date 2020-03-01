@@ -33,7 +33,7 @@ class DCGAN(object):
         _data_related_attrs = ['dimension', 'size', 'rho']
         self.read_attributes_from_config('data', _data_related_attrs)
 
-        _model_related_attrs = ['noise_dim', 'num_channels_prefinal', 'n_critic', 'num_channels_first', 'num_layers']
+        _model_related_attrs = ['noise_dim', 'num_channels_prefinal', 'n_critic', 'num_channels_first', 'num_layers', 'use_batch_norm', 'use_init']
         self.read_attributes_from_config('model', _model_related_attrs)
 
         _hparam_related_attrs = ['g_lr', 'g_betas', 'd_lr', 'd_betas', 'g_weight_decay', 'd_weight_decay']
@@ -46,6 +46,7 @@ class DCGAN(object):
         self.device = torch.device('cuda')
 
         self._build_model()
+        import ipdb; ipdb.set_trace()
         self._setup_optimizers()
         self._define_losses()
 
@@ -83,19 +84,21 @@ class DCGAN(object):
     def _build_model(self):
 
         logger.log("Loading {} network ...".format(colored('deconvolutional generator', 'red')))
-        self.G = DCGenerator(self.out_h, self.out_w, self.noise_dim, self.num_channels_prefinal, num_layers=self.num_layers)
+        self.G = DCGenerator(self.out_h, self.out_w, self.noise_dim, self.num_channels_prefinal, self.use_batch_norm, num_layers=self.num_layers)
 
-        # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
-        self.G.apply(self.weights_init)
+        if self.use_init:
+            # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
+            self.G.apply(self.weights_init)
 
         self.G = self.G.train()
 
 
         logger.log("Loading {} network ...".format(colored('convolutional discriminator', 'red')))
-        self.D = DCDiscriminator(num_channels_first=self.num_channels_first, num_layers=self.num_layers)
+        self.D = DCDiscriminator(num_channels_first=self.num_channels_first, use_batch_norm=self.use_batch_norm, num_layers=self.num_layers)
 
-        # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
-        self.D.apply(self.weights_init)
+        if self.use_init:
+            # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
+            self.D.apply(self.weights_init)
 
         self.D = self.D.train()
 

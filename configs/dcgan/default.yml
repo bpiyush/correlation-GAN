@@ -29,6 +29,9 @@ model:
   n_critic              : 1
   num_layers            : 4
 
+  use_init              : True
+  use_batch_norm        : True
+
   generator_hidden_layers : [16, 32]
   disc_hidden_layers      : [32, 16]
 

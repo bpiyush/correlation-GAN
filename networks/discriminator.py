@@ -20,11 +20,11 @@ class Discriminator(LinearModel):
 
 class DCDiscriminator(nn.Module):
     """docstring for DCDiscriminator"""
-    def __init__(self, num_channels_first=64, num_layers=4, input_image_channels=1):
+    def __init__(self, num_channels_first=64, num_layers=4, input_image_channels=1, use_batch_norm=True):
         super(DCDiscriminator, self).__init__()
 
-        self.lrelu = nn.LeakyReLU()
-        self.sigmoid = nn.Sigmoid()
+        lrelu = nn.LeakyReLU()
+        sigmoid = nn.Sigmoid()
 
         self.channel_sizes = [input_image_channels] + [num_channels_first * int(math.pow(2, i)) for i in range(num_layers)]
 
@@ -35,12 +35,20 @@ class DCDiscriminator(nn.Module):
             out_channels = self.channel_sizes[i]
             conv_layer = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=5, stride=2, padding=2)
             batch_norm_layer = self.batch_norm(out_channels)
-            activation = self.lrelu if i < num_layers - 1 else self.sigmoid
+            activation = lrelu if i < num_layers - 1 else sigmoid
 
             name = '%s_{}'.format(i)
             self.conv_net.add_module(name=name % 'conv_layer', module=conv_layer)
-            self.conv_net.add_module(name=name % 'batch_norm_layer', module=batch_norm_layer)
+            if use_batch_norm:
+                self.conv_net.add_module(name=name % 'batch_norm_layer', module=batch_norm_layer)
             self.conv_net.add_module(name=name % 'activation', module=activation)
+
+        # self.classifier = nn.Sequential()
+
+        # self.classifier.add_module(name='flattener', module=nn.Flatten())
+
+        # linear_layer = nn.Linear(in_features=prod_of_other_dims, out_features=1)
+        # self.classifier.add_module(name='linear_layer', module=nn.Flatten())
 
     def forward(self, image, return_logits=False):
         conv_output = self.conv_net(image)
@@ -48,7 +56,9 @@ class DCDiscriminator(nn.Module):
         conv_output = conv_output.reshape((-1, prod_of_other_dims))
         self.linear = nn.Linear(in_features=prod_of_other_dims, out_features=1)
         logits = self.linear(conv_output)
-        y = self.sigmoid(logits)
+
+        sigmoid = nn.Sigmoid()
+        y = sigmoid(logits)
 
         if return_logits:
             return y, logits
