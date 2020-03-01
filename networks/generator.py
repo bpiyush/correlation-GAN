@@ -43,18 +43,21 @@ class DCGenerator(nn.Module):
 
         out_features = 4 * num_channels_prefinal * self.size_dict[0]['height'] * self.size_dict[0]['width']
 
-        linear_layer = nn.Linear(in_features=noise_dim, out_features=out_features)
-        batch_norm_for_linear_layer = self.batch_norm(self.size_dict[0]['channels'])
-
         lrelu = nn.LeakyReLU(True)
         tanh = nn.Tanh()
 
-        self.projector = nn.Sequential()
-        self.projector.add_module(name='linear_layer', module=linear_layer)
-        if use_batch_norm:
-            self.projector.add_module(name='bn_for_linear_layer', module=batch_norm_for_linear_layer)
-        self.projector.add_module(name='activation_for_linear_layer', module=lrelu)
+        linear_layer = nn.Linear(in_features=noise_dim, out_features=out_features)
+        # batch_norm_for_linear_layer = self.batch_norm(self.size_dict[0]['channels'])
+        batch_norm_for_linear_layer = nn.BatchNorm1d(num_features=out_features)
 
+        # defining the projector network
+        self.fc_net = nn.Sequential()
+        self.fc_net.add_module(name='linear_layer', module=linear_layer)
+        if use_batch_norm:
+            self.fc_net.add_module(name='bn_for_linear_layer', module=batch_norm_for_linear_layer)
+        self.fc_net.add_module(name='activation_for_linear_layer', module=lrelu)
+
+        # defining the deconvolutional network
         self.deconv_net = nn.Sequential()
         for i in range(num_layers - 1):
             in_channels = self.size_dict[i]['channels']
@@ -82,11 +85,8 @@ class DCGenerator(nn.Module):
     def forward(self, z):
         assert z.shape[-1] == self.noise_dim
 
-        x = self.projector(z)
+        x = self.fc_net(z)
         x = x.reshape((-1, self.size_dict[0]['channels'], self.size_dict[0]['height'], self.size_dict[0]['width']))
-        # x = self.projector_batch_norm(x)
-        # x = self.relu(x)
-
         out = self.deconv_net(x)
 
         return out

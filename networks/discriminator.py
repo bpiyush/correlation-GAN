@@ -20,7 +20,7 @@ class Discriminator(LinearModel):
 
 class DCDiscriminator(nn.Module):
     """docstring for DCDiscriminator"""
-    def __init__(self, num_channels_first=64, num_layers=4, input_image_channels=1, use_batch_norm=True):
+    def __init__(self, input_image_side, input_image_channels=1, num_channels_first=64, num_layers=4, use_batch_norm=True):
         super(DCDiscriminator, self).__init__()
 
         lrelu = nn.LeakyReLU()
@@ -28,8 +28,8 @@ class DCDiscriminator(nn.Module):
 
         self.channel_sizes = [input_image_channels] + [num_channels_first * int(math.pow(2, i)) for i in range(num_layers)]
 
+        # defining the conv network
         self.conv_net = nn.Sequential()
-
         for i in range(1, num_layers):
             in_channels = self.channel_sizes[i - 1]
             out_channels = self.channel_sizes[i]
@@ -43,19 +43,26 @@ class DCDiscriminator(nn.Module):
                 self.conv_net.add_module(name=name % 'batch_norm_layer', module=batch_norm_layer)
             self.conv_net.add_module(name=name % 'activation', module=activation)
 
-        # self.classifier = nn.Sequential()
+        # defining the FCN layer
+        input_image_size = (input_image_channels, input_image_side, input_image_side)
+        final_flattened_size = self.get_flattened_size(input_image_size)
+        self.fc_net = nn.Sequential()
+        self.fc_net.add_module(name='flattener', module=nn.Flatten())
+        linear_layer = nn.Linear(in_features=final_flattened_size, out_features=1)
+        self.fc_net.add_module(name='linear_layer', module=linear_layer)
 
-        # self.classifier.add_module(name='flattener', module=nn.Flatten())
+    def get_flattened_size(self, input_image_size):
+        temp_batch_size = 10
 
-        # linear_layer = nn.Linear(in_features=prod_of_other_dims, out_features=1)
-        # self.classifier.add_module(name='linear_layer', module=nn.Flatten())
+        image = torch.zeros((temp_batch_size, *input_image_size))
+        conv_output = self.conv_net(image)
+        prod_of_other_dims = np.prod(np.array([*conv_output.shape[1:]]))
+
+        return prod_of_other_dims
 
     def forward(self, image, return_logits=False):
         conv_output = self.conv_net(image)
-        prod_of_other_dims = np.prod(np.array([*conv_output.shape[1:]]))
-        conv_output = conv_output.reshape((-1, prod_of_other_dims))
-        self.linear = nn.Linear(in_features=prod_of_other_dims, out_features=1)
-        logits = self.linear(conv_output)
+        logits = self.fc_net(conv_output)
 
         sigmoid = nn.Sigmoid()
         y = sigmoid(logits)
@@ -68,7 +75,6 @@ class DCDiscriminator(nn.Module):
     def batch_norm(self, output_dim, eps=1e-5, momentum=0.9):
         return nn.BatchNorm2d(output_dim, eps=eps, momentum=momentum)
 
-        
 
 if __name__ == '__main__':
 

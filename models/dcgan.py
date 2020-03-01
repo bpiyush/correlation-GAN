@@ -46,7 +46,6 @@ class DCGAN(object):
         self.device = torch.device('cuda')
 
         self._build_model()
-        import ipdb; ipdb.set_trace()
         self._setup_optimizers()
         self._define_losses()
 
@@ -84,7 +83,8 @@ class DCGAN(object):
     def _build_model(self):
 
         logger.log("Loading {} network ...".format(colored('deconvolutional generator', 'red')))
-        self.G = DCGenerator(self.out_h, self.out_w, self.noise_dim, self.num_channels_prefinal, self.use_batch_norm, num_layers=self.num_layers)
+        self.G = DCGenerator(self.out_h, self.out_w, self.noise_dim, self.num_channels_prefinal,
+                             self.use_batch_norm, num_layers=self.num_layers)
 
         if self.use_init:
             # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
@@ -92,9 +92,9 @@ class DCGAN(object):
 
         self.G = self.G.train()
 
-
         logger.log("Loading {} network ...".format(colored('convolutional discriminator', 'red')))
-        self.D = DCDiscriminator(num_channels_first=self.num_channels_first, use_batch_norm=self.use_batch_norm, num_layers=self.num_layers)
+        self.D = DCDiscriminator(self.input_image_dimension, num_channels_first=self.num_channels_first,
+                                 use_batch_norm=self.use_batch_norm, num_layers=self.num_layers)
 
         if self.use_init:
             # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
@@ -177,7 +177,6 @@ class DCGAN(object):
         if self.use_cuda:
             real_labels = real_labels.to(self.device)
         D_loss_real = self.criterion(D_X_logits.view(-1), real_labels)
-        # D_loss_real.backward()
 
         G_Z = self.G(Z)
         D_G_Z, D_G_Z_logits = self.D(G_Z, return_logits=True)
@@ -185,7 +184,7 @@ class DCGAN(object):
         if self.use_cuda:
             fake_labels = fake_labels.to(self.device)
         D_loss_fake = self.criterion(D_G_Z_logits.view(-1), fake_labels)
-        # D_loss_fake.backward()
+
 
         D_loss = D_loss_real + D_loss_fake
         D_loss.backward(retain_graph=True)
