@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 
 sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
-from networks.generic import LinearModel
+from networks.generic import LinearModel, Flatten
 
 class Discriminator(LinearModel):
     """
@@ -47,7 +47,7 @@ class DCDiscriminator(nn.Module):
         input_image_size = (input_image_channels, input_image_side, input_image_side)
         final_flattened_size = self.get_flattened_size(input_image_size)
         self.fc_net = nn.Sequential()
-        self.fc_net.add_module(name='flattener', module=nn.Flatten())
+        self.fc_net.add_module(name='flattener', module=Flatten())
         linear_layer = nn.Linear(in_features=final_flattened_size, out_features=1)
         self.fc_net.add_module(name='linear_layer', module=linear_layer)
 

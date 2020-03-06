@@ -89,3 +89,10 @@ class LinearModel(nn.Module):
     def forward(self, inputs):
         msg = 'the base class [LinearModel] is not callable!'
         sys.exit(msg)
+
+
+class Flatten(nn.Module):
+
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
