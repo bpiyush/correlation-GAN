@@ -49,7 +49,7 @@ def plot_original_vs_generated(original_data, generated_data):
     ax.scatter(generated_data[:, 0], generated_data[:, 1], label=r'Generated ($\rho = {}$)'.format(generated_correlation))
     ax.legend()
 
-    ax.set_xlabel('X1')
+    ax.set_xlabel('X1: Number of points = {}'.format(original_data.shape[0]))
     ax.set_ylabel('X2')
 
     return fig2im(fig)

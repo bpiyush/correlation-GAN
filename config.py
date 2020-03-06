@@ -31,6 +31,9 @@ class Config(object):
         if self.data['sample_run']:
             self.data['size'] = self.data['sample_num']
 
+        # set default seed
+        self.system['seed'] = self.__dict__.get('system').get('seed', 0)
+
         # set defaults for model decisions
         self.model['use_batch_norm'] = self.__dict__.get('model').get('use_batch_norm', True)
         self.model['use_init'] = self.__dict__.get('model').get('use_init', True)

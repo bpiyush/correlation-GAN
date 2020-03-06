@@ -53,7 +53,6 @@ def setup_wandb_credentials(username, project, run_dir):
 
 
 if __name__ == '__main__':
-    seed_everything()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--version', type=str, required=True,
@@ -70,6 +69,11 @@ if __name__ == '__main__':
 
     # Setup config
     config = Config(args.version, args.arch)
+
+    # set seed for eveything
+    seed_everything(config.system['seed'])
+
+    # create data loader
     dataloader = create_data_loader(config)
 
     # Setup W&B credentials

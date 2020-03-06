@@ -17,6 +17,7 @@ warnings.filterwarnings("ignore")
 import sys
 sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
 from utils.logger import Logger
+from utils.metrics import kl_divergence, js_divergence, reconstruction_error
 from data.dataloader import create_data_loader
 from utils.visualize import plot_original_vs_generated
 from networks.generator import Generator
@@ -42,6 +43,8 @@ class WGAN_GP():
             self.max_samples = config.data['size']
         self._fixed_z = torch.randn(self.max_samples, self.latent_dim)
         self.hist = []
+
+        self.seed = config.system['seed']
 
         if self.use_cuda:
             self._fixed_z = self._fixed_z.cuda()
@@ -89,7 +92,7 @@ class WGAN_GP():
         for epoch in range(1, n_epochs + 1):
             logger.log('Starting epoch {}...'.format(colored(epoch, 'yellow')))
             self._train_epoch(data_loader)
-            self._update_wandb(data_loader, epoch)
+            self._update_wandb(data_loader, epoch, self.seed)
 
     def _train_epoch(self, data_loader):
         iterator = tqdm(data_loader)
@@ -167,16 +170,62 @@ class WGAN_GP():
             z = z.cuda()
         return self.G(z)
 
-    def _update_wandb(self, data_loader, epoch_number):
-        wandb.log(self.hist[epoch_number], step=epoch_number)
-
+    def _get_original_and_generated_data(self, data_loader, seed):
         dataset = data_loader.dataset
 
+        # Fix the seed since we need the same original data across epochs
+        np.random.seed(seed)
         indices = np.random.choice(len(dataset), size=min(len(dataset), self.max_samples), replace=False)
+
         original_data = np.array([dataset[i]['point'].cpu().numpy() for i in indices])
         generated_data = self.G(self._fixed_z).detach().cpu().numpy()
 
-        wandb.log({"Original vs Generated: Scatter plot": wandb.Image(plot_original_vs_generated(original_data, generated_data))})
+        return original_data, generated_data
+
+    def _compute_metrics(self, original_data, generated_data):
+
+        assert original_data.shape[0] == generated_data.shape[0]
+
+        kld = kl_divergence(original_data, generated_data)
+        jsd = js_divergence(original_data, generated_data)
+        recs_error = reconstruction_error(original_data, generated_data)
+
+        metrics = {'kld': kld, 'jsd': jsd, 'reconstruction_error': recs_error}
+
+        return metrics
+
+    def _compare_original_and_generated_data(self, data_loader, seed):
+        original_data, generated_data = self._get_original_and_generated_data(data_loader, seed)
+
+        scatter_plot = plot_original_vs_generated(original_data, generated_data)
+        metrics = self._compute_metrics(original_data, generated_data)
+
+        comparison = {
+            "Original vs Generated: Scatter plot": wandb.Image(scatter_plot),
+            "KL Divergence": metrics['kld'],
+            "JS Divergence": metrics['jsd'],
+            "Reconstruction error": metrics['reconstruction_error']
+        }
+
+        return comparison
+
+
+    def _update_wandb(self, data_loader, epoch_number, seed):
+        wandb.log(self.hist[epoch_number], step=epoch_number)
+
+        comparison_dict = self._compare_original_and_generated_data(data_loader, seed)
+        wandb.log(comparison_dict, step=epoch_number)
+
+        # dataset = data_loader.dataset
+
+        # # Fix the seed since we need the same original data across epochs
+        # np.random.seed(seed)
+        # indices = np.random.choice(len(dataset), size=min(len(dataset), self.max_samples), replace=False)
+
+        # original_data = np.array([dataset[i]['point'].cpu().numpy() for i in indices])
+        # generated_data = self.G(self._fixed_z).detach().cpu().numpy()
+
+        # wandb.log({"Original vs Generated: Scatter plot": wandb.Image(plot_original_vs_generated(original_data, generated_data))})
 
 
 if __name__ == '__main__':
