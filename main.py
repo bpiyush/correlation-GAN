@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     # Setup W&B credentials
     run_name = 'correlation-GAN_{}_{}'.format(config.arch, config.version)
-    username, project, run_dir = "bpiyush", "correlation-GAN", config.checkpoint_dir
+    username, project, run_dir = "bpiyush", "correlation-GAN", config.paths['CKPT_DIR']
     setup_wandb_credentials(username, project, run_dir)
 
     wandb.init(name=run_name, dir=run_dir, notes=config.description, entity=username)

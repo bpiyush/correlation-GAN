@@ -261,7 +261,7 @@ if __name__ == '__main__':
     run_name = 'correlation-GAN_{}_{}'.format(config.arch, config.version)
     os.environ['WANDB_ENTITY'] = "wadhwani"
     os.environ['WANDB_PROJECT'] = "correlation-GAN"
-    run_dir = config.checkpoint_dir
+    run_dir = config.paths['CKPT_DIR']
     os.environ['WANDB_DIR'] = run_dir
     wandb.init(name=run_name, dir=run_dir, notes=config.description)
     wandb.config.update(config.__dict__)

@@ -63,7 +63,11 @@ class SyntheticDataset(object):
     def __getitem__(self, index):
 
         if self.config.arch == 'wgan_gp':
-            return {'point': torch.tensor(self.dataset['data'].values[index]).float()}
+            # return {'point': torch.tensor(self.dataset['data'].values[index]).float()}
+            input_ = self.preprocessor.transform(self.dataset['data'].values[index].reshape(1, -1)).reshape(self.data_dimension)
+            input_ = torch.tensor(input_).float()
+            return {'point': input_}
+
         elif self.config.arch == 'dcgan':
             input_ = self.preprocessor.transform(self.dataset['data'].values[index].reshape(1, -1)).reshape(self.data_dimension)
             input_ = torch.tensor(self.dataset['data'].values[index]).float()

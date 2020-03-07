@@ -3,7 +3,7 @@ from os import makedirs
 from os.path import join, basename, expanduser, splitext
 
 from utils.constants import DATA_DIR
-from utils.io import read_yml
+from utils.io import read_yml, save_yml
 
 
 USER_TO_HOME = {
@@ -23,9 +23,6 @@ class Config(object):
         config_path = join(self.paths['HOME'], 'configs', arch, version)
         self.__dict__.update(read_yml(config_path))
 
-        self.checkpoint_dir = join(self.paths['CKPT_DIR'], splitext(self.version)[0])
-        self.log_dir = join(self.paths['LOG_DIR'], self.version)
-
         self.data['sample_num'] = self.__dict__.get('data').get('sample_num', 500)
         self.data['sample_run'] = self.__dict__.get('data').get('sample_run', False)
         if self.data['sample_run']:
@@ -38,19 +35,21 @@ class Config(object):
         self.model['use_batch_norm'] = self.__dict__.get('model').get('use_batch_norm', True)
         self.model['use_init'] = self.__dict__.get('model').get('use_init', True)
 
-        for path in [self.checkpoint_dir, self.log_dir]:
-            makedirs(path, exist_ok=True)
+        save_yml(self.__dict__, join(self.paths['CONFIG_DIR'], 'config.yml'))
 
     def define_paths(self, username):
         HOME = USER_TO_HOME[username].format(username)
         COMMON_DIR = join(HOME, 'common')
-        OUT_DIR = '/scratch/users/{}/correlation-GAN/'.format(username)
+        OUT_DIR = '/scratch/users/{}/correlation-GAN/{}/{}'.format(username, self.arch, splitext(self.version)[0])
         CKPT_DIR = join(OUT_DIR, 'checkpoints')
         LOG_DIR = join(OUT_DIR, 'logs')
         CONFIG_DIR = join(OUT_DIR, 'configs')
         DATA_DIR = '/home/users/piyushb/data/'
 
         makedirs(CONFIG_DIR, exist_ok=True)
+        makedirs(CKPT_DIR, exist_ok=True)
+        makedirs(LOG_DIR, exist_ok=True)
+
         keys = ['HOME', 'CKPT_DIR', 'LOG_DIR', 'CONFIG_DIR', 'COMMON_DIR', 'DATA_DIR']
         dir_dict = {}
         for key in keys:

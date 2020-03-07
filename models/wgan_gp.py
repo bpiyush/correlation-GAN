@@ -1,3 +1,4 @@
+from os.path import join
 import imageio
 import numpy as np
 import wandb
@@ -18,6 +19,7 @@ import sys
 sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
 from utils.logger import Logger
 from utils.metrics import kl_divergence, js_divergence, reconstruction_error
+from utils.io import save_model, save_pkl
 from data.dataloader import create_data_loader
 from utils.visualize import plot_original_vs_generated
 from networks.generator import Generator
@@ -25,6 +27,7 @@ from networks.discriminator import Discriminator
 logger = Logger()
 
 MAX_SAMPLES = 10000
+CKPT_SAVE_INTERVAL = 20
 
 class WGAN_GP():
     def __init__(self, config):
@@ -80,7 +83,6 @@ class WGAN_GP():
         hparam_attrs_from_config = ['g_lr', 'g_betas', 'd_lr', 'd_betas']
         for attr in hparam_attrs_from_config:
             setattr(self, attr, self.config.hyperparams[attr])
-            # exec('{} = self.config.hyperparams["{}"]'.format(attr, attr))
 
         g_optimizer = Adam(generator.parameters(), lr=self.g_lr, betas=tuple(self.g_betas), weight_decay=self.config.hyperparams['weight_decay'])
         d_optimizer = Adam(discriminator.parameters(), lr=self.d_lr, betas=tuple(self.d_betas))
@@ -89,10 +91,39 @@ class WGAN_GP():
 
     def train(self, data_loader, n_epochs):
 
+        best_metric_so_far = np.inf
+
         for epoch in range(1, n_epochs + 1):
             logger.log('Starting epoch {}...'.format(colored(epoch, 'yellow')))
+
+            # run the train epoch
             self._train_epoch(data_loader)
-            self._update_wandb(data_loader, epoch, self.seed)
+
+            # compute metrics and visualizations post the epoch
+            original_data, generated_data = self._get_original_and_generated_data(data_loader, self.seed)
+            comparison = self._compare_original_and_generated_data(original_data, generated_data)
+
+            # save checkpoint based on certain metrics
+            reconstruction_error = comparison['Reconstruction error']
+            save_mode = 'no-save'
+            if reconstruction_error < best_metric_so_far:
+                save_mode = 'best'
+                best_metric_so_far = reconstruction_error
+
+                logger.log("[{}] Saving training (O/G) data".format(colored(save_mode, 'red')))
+                self._save_training_data(original_data, generated_data)
+
+            if epoch % CKPT_SAVE_INTERVAL == 1 and save_mode != 'best':
+                save_mode = 'regular'
+
+            if save_mode != 'no-save':
+                metric_value = 'reconstruction error: {}'.format(np.round(reconstruction_error, 2))
+                metric_value = colored(metric_value, 'blue')
+                logger.log("[{}] Saving model checkpoint based on {}".format(colored(save_mode, 'red'), metric_value))
+                self._save_model(epoch, save_mode, comparison)
+
+            # update metrics and visualisations on W&B
+            self._update_wandb(comparison, epoch)
 
     def _train_epoch(self, data_loader):
         iterator = tqdm(data_loader)
@@ -100,6 +131,7 @@ class WGAN_GP():
             self.steps += 1
 
             data = data_dict['point']
+
             data = Variable(data)
             if self.use_cuda:
                 data = data.cuda()
@@ -111,10 +143,11 @@ class WGAN_GP():
                 g_loss = self._generator_train_step(data.size(0))
                 self.hist[-1]['g_loss'] = g_loss
 
-                iterator.set_description('Epoch: {} | V {} | G: {:.3f} | D: {:.3f} | GP: {:.3f}'.format(self.steps, self.config.version, g_loss, d_loss, grad_penalty))
+                iterator.set_description('Itn: {} | V {} | G: {:.3f} | D: {:.3f} | GP: {:.3f}'.format(self.steps, self.config.version, g_loss, d_loss, grad_penalty))
                 iterator.refresh()
 
-        logger.log('Epoch completed => G: {:.3f} D: {:.3f} GP: {:.3f}'.format(g_loss, d_loss, grad_penalty))
+        status = colored('Epoch completed', 'yellow')
+        logger.log('{} => G: {:.3f} D: {:.3f} GP: {:.3f}'.format(status, g_loss, d_loss, grad_penalty))
 
     def _discriminator_train_step(self, data):
         batch_size = data.size(0)
@@ -172,13 +205,20 @@ class WGAN_GP():
 
     def _get_original_and_generated_data(self, data_loader, seed):
         dataset = data_loader.dataset
+        preprocessor = dataset.preprocessor
 
         # Fix the seed since we need the same original data across epochs
         np.random.seed(seed)
         indices = np.random.choice(len(dataset), size=min(len(dataset), self.max_samples), replace=False)
 
+        import ipdb; ipdb.set_trace()
         original_data = np.array([dataset[i]['point'].cpu().numpy() for i in indices])
+        original_data = preprocessor.inverse_transform(original_data)
+
         generated_data = self.G(self._fixed_z).detach().cpu().numpy()
+        generated_data = preprocessor.inverse_transform(generated_data)
+
+        # in case inverse-preprocessing needed, do it here
 
         return original_data, generated_data
 
@@ -194,8 +234,7 @@ class WGAN_GP():
 
         return metrics
 
-    def _compare_original_and_generated_data(self, data_loader, seed):
-        original_data, generated_data = self._get_original_and_generated_data(data_loader, seed)
+    def _compare_original_and_generated_data(self, original_data, generated_data):
 
         scatter_plot = plot_original_vs_generated(original_data, generated_data)
         metrics = self._compute_metrics(original_data, generated_data)
@@ -209,23 +248,24 @@ class WGAN_GP():
 
         return comparison
 
+    def _save_model(self, epoch, save_mode, comparison_dict):
+        ckpt_parent_folder = self.config.paths['CKPT_DIR']
 
-    def _update_wandb(self, data_loader, epoch_number, seed):
+        # saving generator
+        save_model(self.G, 'generator', self.G_opt, epoch, comparison_dict, ckpt_parent_folder, save_mode)
+        # saving discriminator
+        save_model(self.D, 'discriminator', self.D_opt, epoch, comparison_dict, ckpt_parent_folder, save_mode)
+
+    def _save_training_data(self, original_data, generated_data):
+        ckpt_parent_folder = self.config.paths['CKPT_DIR']
+        train_data = {'config': self.config, 'original': original_data, 'generated': generated_data}
+
+        fpath = join(ckpt_parent_folder, 'train_data_best.pkl')
+        save_pkl(train_data, fpath)
+
+    def _update_wandb(self, comparison_dict, epoch_number):
         wandb.log(self.hist[epoch_number], step=epoch_number)
-
-        comparison_dict = self._compare_original_and_generated_data(data_loader, seed)
         wandb.log(comparison_dict, step=epoch_number)
-
-        # dataset = data_loader.dataset
-
-        # # Fix the seed since we need the same original data across epochs
-        # np.random.seed(seed)
-        # indices = np.random.choice(len(dataset), size=min(len(dataset), self.max_samples), replace=False)
-
-        # original_data = np.array([dataset[i]['point'].cpu().numpy() for i in indices])
-        # generated_data = self.G(self._fixed_z).detach().cpu().numpy()
-
-        # wandb.log({"Original vs Generated: Scatter plot": wandb.Image(plot_original_vs_generated(original_data, generated_data))})
 
 
 if __name__ == '__main__':
@@ -238,7 +278,7 @@ if __name__ == '__main__':
     dataloader = create_data_loader(config)
 
     run_name = 'correlation-GAN_{}'.format(config.version)
-    wandb.init(name=run_name, dir=config.checkpoint_dir, notes=config.description)
+    wandb.init(name=run_name, dir=config.paths['CKPT_DIR'], notes=config.description)
     wandb.config.update(config.__dict__)
 
     device = torch.device('cuda')
