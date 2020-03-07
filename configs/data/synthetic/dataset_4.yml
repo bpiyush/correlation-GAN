@@ -1,0 +1,42 @@
+metainfo: 10D Gaussian with varying non uniform correlations
+dataset_name: dataset_4
+use_subset: False
+num_real: 10
+num_cat: 0
+
+target: real-4
+classifier_label: real-10
+
+raw_columns:
+    - real-1
+    - real-2
+    - real-3
+    - real-4
+    - real-5
+    - real-6
+    - real-7
+    - real-8
+    - real-9
+    - real-10
+
+identifiers:
+
+cleaned_columns:
+    - real-1
+    - real-2
+    - real-3
+    - real-4
+    - real-5
+    - real-6
+    - real-7
+    - real-8
+    - real-9
+    - real-10
+
+QIDs:
+    - real-7
+    - real-8
+    - real-9
+
+sensitive:
+    - real-10

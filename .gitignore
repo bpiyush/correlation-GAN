@@ -2,7 +2,8 @@
 *sftp*
 
 # config files
-v*.yml
+configs/dcgan/v*.yml
+configs/wgan_gp/v*.yml
 
 # W&B files
 *wandb*

@@ -1,0 +1,46 @@
+data_type: real
+dataset_name: adult
+use_subset: False
+
+num_real: 6
+num_cat: 8
+
+target: hours-per-week
+classifier_label: income
+
+raw_columns: 
+    - age
+    - workclass
+    - fnlwgt
+    - education
+    - education-num
+    - marital-status
+    - occupation
+    - relationship
+    - race
+    - sex
+    - capital-gain
+    - capital-loss
+    - hours-per-week
+    - native-country
+    - income
+
+identifiers: 
+
+QIDs:
+    - age
+    - occupation
+    - native-country
+    - workclass
+    - education
+
+number_of_tokes:
+    sex             : 2
+    workclass       : 8
+    relationship    : 6
+    education       : 16
+    occupation      : 14
+    native-country  : 41
+    marital-status  : 7
+    race            : 5
+    income          : 2

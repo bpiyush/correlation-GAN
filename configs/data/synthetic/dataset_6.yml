@@ -1,0 +1,22 @@
+metainfo: Mixed dataset to study impact of label encoding
+dataset_name: dataset_6
+use_subset: False
+num_real: 2
+num_cat: 2
+
+target: real-1
+classifier_label: cat-2
+
+raw_columns:
+    - real-1
+    - real-2
+    - cat-3
+    - cat-4
+
+identifiers:
+
+cleaned_columns:
+    - real-1
+    - real-2
+    - cat-3
+    - cat-4
