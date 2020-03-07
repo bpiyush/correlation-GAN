@@ -1,5 +1,62 @@
 import numpy as np
-from scipy.stats import entropy
+import pandas as pd
+from scipy.stats import pearsonr, entropy, chi2_contingency
+import editdistance
+
+
+def corr( X, Y ):
+    return np.array([ pearsonr( x, y )[0] for x,y in zip( X.T, Y.T) ] )
+
+
+def cramers_v(x, y):
+
+    confusion_matrix = pd.crosstab(x, y)
+    chi2 = chi2_contingency(confusion_matrix)[0]
+
+    n = confusion_matrix.sum().sum()
+    phi2 = chi2 / n
+
+    r, k = confusion_matrix.shape
+    phi2corr = max(0, phi2-((k-1)*(r-1))/(n-1))
+
+    rcorr = r-((r-1)**2)/(n-1)
+    kcorr = k-((k-1)**2)/(n-1)
+
+    val = np.sqrt(phi2corr/min((kcorr-1),(rcorr-1)))
+
+    return val
+
+
+def compute_cramers_v_matrix(X):
+
+    dim = X.shape[1]
+    mat = np.zeros((dim, dim))
+    for i in range(dim):
+        for j in range(dim):
+            mat[i][j] = cramers_v(X[:, i], X[:, j])
+
+    return mat
+
+
+def round_of_rating(number):
+    return np.round(number * 2) / 2
+
+
+def batchwise_editdistance(actual, predicted):
+    
+    actual = actual.astype(str)
+    predicted = predicted.astype(str)
+
+    nrows, ncols = actual.shape
+    distances = np.zeros(nrows)
+    for i in range(nrows):
+        value = 0.0
+        for j in range(ncols):
+            value += editdistance.eval(actual.iloc[i, j], predicted.iloc[i, j]) / ncols
+        distances[i] = value
+    return distances
+
+
 
 
 def convert_to_prob_dist(X1, num_bins=100):
