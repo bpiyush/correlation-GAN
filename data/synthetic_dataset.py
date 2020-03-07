@@ -62,15 +62,16 @@ class SyntheticDataset(object):
 
     def __getitem__(self, index):
 
-        if self.config.arch == 'wgan_gp':
-            # return {'point': torch.tensor(self.dataset['data'].values[index]).float()}
+        if self.config.data['preprocess']:
             input_ = self.preprocessor.transform(self.dataset['data'].values[index].reshape(1, -1)).reshape(self.data_dimension)
             input_ = torch.tensor(input_).float()
-            return {'point': input_}
+        else:
+            input_ = torch.tensor(self.dataset['data'].values[index]).float()
+
+        if self.config.arch == 'wgan_gp':
+            return {'point': input_} # send out a (D, ) dimensional vector
 
         elif self.config.arch == 'dcgan':
-            input_ = self.preprocessor.transform(self.dataset['data'].values[index].reshape(1, -1)).reshape(self.data_dimension)
-            input_ = torch.tensor(self.dataset['data'].values[index]).float()
             image = self.squarify_tensor(input_, self.input_image_side)
             return {'image': image.unsqueeze(0)} # Send out (1, side, side) sized image
 

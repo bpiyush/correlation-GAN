@@ -27,6 +27,7 @@ class Config(object):
         self.data['sample_run'] = self.__dict__.get('data').get('sample_run', False)
         if self.data['sample_run']:
             self.data['size'] = self.data['sample_num']
+        self.data['preprocess'] = self.__dict__.get('data').get('preprocess', False)
 
         # set default seed
         self.system['seed'] = self.__dict__.get('system').get('seed', 0)
@@ -34,6 +35,7 @@ class Config(object):
         # set defaults for model decisions
         self.model['use_batch_norm'] = self.__dict__.get('model').get('use_batch_norm', True)
         self.model['use_init'] = self.__dict__.get('model').get('use_init', True)
+        self.model['last_layer_activation'] = self.__dict__.get('model').get('last_layer_activation', 'tanh')
 
         save_yml(self.__dict__, join(self.paths['CONFIG_DIR'], 'config.yml'))
 

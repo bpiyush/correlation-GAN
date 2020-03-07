@@ -4,6 +4,12 @@ import sys
 import torch
 
 
+ACTIVATION_MAP = {
+    'relu': nn.ReLU(),
+    'lrelu': nn.LeakyReLU(),
+    'tanh': nn.Tanh()
+}
+
 class LinearModel(nn.Module):
     '''
         input param:
@@ -12,12 +18,13 @@ class LinearModel(nn.Module):
             drop_prob: a list of float defined the drop prob, such as [0.5, 0.5, 0]
             use_ac_func: a list of bool define use active function or not, such as [True, True, False]
     '''
-    def __init__(self, fc_layers, use_dropout, drop_prob, use_ac_func, activation):
+    def __init__(self, fc_layers, use_dropout, drop_prob, use_ac_func, activation, last_layer_activation=None):
         super(LinearModel, self).__init__()
         self.fc_layers     = fc_layers
         self.use_dropout   = use_dropout
         self.drop_prob     = drop_prob
         self.use_ac_func   = use_ac_func
+        self.last_layer_activation = last_layer_activation
 
         if activation == 'relu':
             self.activation = nn.ReLU()
@@ -84,6 +91,14 @@ class LinearModel(nn.Module):
                 self.fc_blocks.add_module(
                     name='regressor_fc_dropout_{}'.format(_),
                     module=nn.Dropout(p = self.drop_prob[_])
+                )
+
+        if self.last_layer_activation is not None:
+            assert self.last_layer_activation in list(ACTIVATION_MAP)
+
+            self.fc_blocks.add_module(
+                    name='regressor_last_layer_activation',
+                    module=ACTIVATION_MAP[self.last_layer_activation]
                 )
 
     def forward(self, inputs):

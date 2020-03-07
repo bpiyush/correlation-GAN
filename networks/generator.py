@@ -13,8 +13,8 @@ class Generator(LinearModel):
     """
     Class for definition of linear generator for structured data
     """
-    def __init__(self, fc_layers, use_dropout, drop_prob, use_ac_func, activation):
-        super(Generator, self).__init__(fc_layers, use_dropout, drop_prob, use_ac_func, activation)
+    def __init__(self, fc_layers, use_dropout, drop_prob, use_ac_func, activation, last_layer_activation=None):
+        super(Generator, self).__init__(fc_layers, use_dropout, drop_prob, use_ac_func, activation, last_layer_activation)
         
     def forward(self, inputs):
         return self.fc_blocks(inputs)

@@ -64,14 +64,17 @@ class WGAN_GP():
         use_ac_func = self.config.model['use_ac_func']
         activation = self.config.model['activation']
         disc_hidden_layers = self.config.model['disc_hidden_layers']
+        last_layer_act = self.config.model['last_layer_activation']
 
         logger.log("Loading {} network ...".format(colored('generator', 'red')))
         gen_fc_layers = [self.latent_dim, *generator_hidden_layers, data_dimension]
-        generator = Generator(gen_fc_layers, use_dropout, drop_prob, use_ac_func, activation).to(device)
+        generator = Generator(gen_fc_layers, use_dropout, drop_prob, use_ac_func, activation, last_layer_act).to(device)
+        # generator = generator.train()
 
         logger.log("Loading {} network ...".format(colored('discriminator', 'red')))
         disc_fc_layers = [data_dimension, *disc_hidden_layers, 1]
         discriminator = Discriminator(disc_fc_layers, use_dropout, drop_prob, use_ac_func, activation).to(device)
+        # discriminator = discriminator.train()
 
         wandb.watch([generator, discriminator])
 
@@ -205,20 +208,21 @@ class WGAN_GP():
 
     def _get_original_and_generated_data(self, data_loader, seed):
         dataset = data_loader.dataset
-        preprocessor = dataset.preprocessor
 
         # Fix the seed since we need the same original data across epochs
         np.random.seed(seed)
         indices = np.random.choice(len(dataset), size=min(len(dataset), self.max_samples), replace=False)
 
-        import ipdb; ipdb.set_trace()
         original_data = np.array([dataset[i]['point'].cpu().numpy() for i in indices])
-        original_data = preprocessor.inverse_transform(original_data)
 
+        # eval_generator = self.G.eval()
         generated_data = self.G(self._fixed_z).detach().cpu().numpy()
-        generated_data = preprocessor.inverse_transform(generated_data)
 
-        # in case inverse-preprocessing needed, do it here
+        if self.config.data['preprocess']:
+            # if original data is preprocessed, generated needs to be post processed
+            preprocessor = dataset.preprocessor
+            original_data = preprocessor.inverse_transform(original_data)
+            generated_data = preprocessor.inverse_transform(generated_data)
 
         return original_data, generated_data
 

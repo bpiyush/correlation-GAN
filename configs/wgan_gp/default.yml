@@ -10,6 +10,7 @@ data :
   rho       : 0.5
   sample_run: false
   sample_num: 500
+  preprocess: False
 
 # training related
 training :
@@ -28,6 +29,7 @@ model:
   drop_prob   : [0.5, 0.5, 0.5]
   use_ac_func : [True, True, False]
   activation  : 'relu'
+  last_layer_activation: null
   latent_dim  : 10
   n_critic    : 2
 
