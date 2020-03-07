@@ -9,7 +9,6 @@ from os import makedirs
 from os.path import join, exists
 import matplotlib.pyplot as plt
 
-# sys.path.append('/mnt/experiments/correlation_GAN/')
 from utils.constants import DATA_DIR, PROJECT_HOME
 from utils.io import read_yml
 
