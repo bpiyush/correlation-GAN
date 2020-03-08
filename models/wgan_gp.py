@@ -21,7 +21,7 @@ from utils.logger import Logger
 from utils.metrics import kl_divergence, js_divergence, reconstruction_error
 from utils.io import save_model, save_pkl
 from data.dataloader import create_data_loader
-from utils.visualize import plot_original_vs_generated
+from utils.visualize import plot_original_vs_generated, plot_correlation
 from networks.generator import Generator
 from networks.discriminator import Discriminator
 logger = Logger()
@@ -242,10 +242,13 @@ class WGAN_GP():
     def _compare_original_and_generated_data(self, original_data, generated_data):
 
         scatter_plot = plot_original_vs_generated(original_data, generated_data)
+        correlation_plot = plot_correlation(original_data, generated_data, self.data_config['cleaned_columns'])
+
         metrics = self._compute_metrics(original_data, generated_data)
 
         comparison = {
             "Original vs Generated: Scatter plot": wandb.Image(scatter_plot),
+            "Original vs Generated: Correlation": wandb.Image(correlation_plot),
             "KL Divergence": metrics['kld'],
             "JS Divergence": metrics['jsd'],
             "Reconstruction error": metrics['reconstruction_error']

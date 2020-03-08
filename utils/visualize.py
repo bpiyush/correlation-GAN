@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from termcolor import colored
+import seaborn as sns
 from scipy.stats import pearsonr as correlation
 
 def colored_print(string, color='yellow'):
@@ -39,7 +41,7 @@ def fig2im(fig):
 def plot_original_vs_generated(original_data, generated_data):
     """Predicted vs ground truth weight"""
 
-    assert len(original_data.shape) == 2 and len(generated_data.shape) == 2
+    # assert len(original_data.shape) == 2 and len(generated_data.shape) == 2
     original_correlation = np.round(correlation(original_data[:, 0], original_data[:, 1])[0], 3)
     generated_correlation = np.round(correlation(generated_data[:, 0], generated_data[:, 1])[0], 3)
 
@@ -51,5 +53,20 @@ def plot_original_vs_generated(original_data, generated_data):
 
     ax.set_xlabel('X1: Number of points = {}'.format(original_data.shape[0]))
     ax.set_ylabel('X2')
+
+    return fig2im(fig)
+
+
+def plot_correlation(original_data, generated_data, column_names):
+    corr_ori = pd.DataFrame(original_data, columns=column_names).corr()
+    corr_gen = pd.DataFrame(generated_data, columns=column_names).corr()
+
+    cmap = sns.cubehelix_palette(light=1, as_cmap=True)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+    sns.heatmap(corr_ori, vmin=0.0, vmax=1.0, ax=ax1, cmap=cmap)
+    ax1.set_title("Correlation for original data")
+    sns.heatmap(corr_gen, vmin=0.0, vmax=1.0, ax=ax2, cmap=cmap)
+    ax2.set_title("Correlation for generated data")
 
     return fig2im(fig)
