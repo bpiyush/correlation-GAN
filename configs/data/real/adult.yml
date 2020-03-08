@@ -2,6 +2,8 @@ data_type: real
 dataset_name: adult
 use_subset: False
 
+size      : 48141
+dimension : 15
 num_real: 6
 num_cat: 8
 

@@ -4,6 +4,7 @@
 # config files
 configs/dcgan/v*.yml
 configs/wgan_gp/v*.yml
+configs/backup/
 
 # W&B files
 *wandb*

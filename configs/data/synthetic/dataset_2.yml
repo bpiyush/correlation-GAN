@@ -1,6 +1,9 @@
 metainfo: 10D Gaussian dataset with uniformly varying correlations
 dataset_name: dataset_2
 use_subset: False
+
+size      : 5000
+dimension : 10
 num_real: 10
 num_cat: 0
 

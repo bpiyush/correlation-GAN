@@ -3,13 +3,11 @@ description: default config
 # Data related configs
 data :
   type      : synthetic
-  name      : gaussian-2d
-  version   : v1
-  size      : 5000
-  dimension : 2
-  rho       : 0.5
-  sample_run: true
+  name      : dataset_1
+  sample_run: false
   sample_num: 500
+  preprocess: False
+  version   : 1
 
 # training related
 training :

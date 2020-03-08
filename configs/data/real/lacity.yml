@@ -2,6 +2,8 @@ data_type: real
 dataset_name: lacity
 use_subset: true
 
+size      : 18000
+dimension : 33
 num_real: 24
 num_cat: 8
 

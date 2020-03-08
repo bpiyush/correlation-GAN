@@ -1,6 +1,9 @@
 metainfo: 2D Gaussian dataset with varying correlation
 dataset_name: dataset_1
 use_subset: False
+
+size      : 5000
+dimension : 2
 num_real: 2
 num_cat: 0
 

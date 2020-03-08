@@ -1,6 +1,9 @@
 metainfo: Mixed dataset to study impact of label encoding
 dataset_name: dataset_6
 use_subset: False
+
+size      : 5000
+dimension : 10
 num_real: 2
 num_cat: 2
 

@@ -1,6 +1,9 @@
 metainfo: 2D Categorical data similar to dataset 5
 dataset_name: dataset_5
 use_subset: False
+
+size      : 5000
+dimension : 10
 num_real: 0
 num_cat: 10
 

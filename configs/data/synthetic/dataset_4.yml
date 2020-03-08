@@ -1,6 +1,9 @@
 metainfo: 10D Gaussian with varying non uniform correlations
 dataset_name: dataset_4
 use_subset: False
+
+size      : 5000
+dimension : 10
 num_real: 10
 num_cat: 0
 
