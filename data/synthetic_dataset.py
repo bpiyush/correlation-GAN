@@ -18,24 +18,17 @@ class SyntheticDataset(object):
     def __init__(self, config):
         super(SyntheticDataset, self).__init__()
         self.config = config
-
-        self.data_config, data_folder = self.load_data_config()
+        self.data_config = config.data_config
 
         self.preprocessor = Pipeline([('standard scaler', StandardScaler()), ('minmax scaler', MinMaxScaler(feature_range=(-1.0, 1.0)))])
-        self.dataset, self.data_related_params = self.load_dataset(data_folder)
+        self.dataset, self.data_related_params = self.load_dataset()
 
         self.data_dimension = self.data_config['dimension']
         self.input_image_side = int(np.ceil(np.sqrt(self.data_dimension)))
 
-    def load_data_config(self):
+    def load_dataset(self):
         data_type, dataset_name = self.config.data['type'], self.config.data['name']
-        data_config_path = join(self.config.paths['HOME'], 'configs/data/{}/{}.yml'.format(data_type, dataset_name))
-        data_config = read_yml(data_config_path)
-
         data_folder = join(self.config.paths['DATA_DIR'], data_type, dataset_name)
-        return data_config, data_folder
-
-    def load_dataset(self, data_folder):
         dataset_path = join(data_folder, 'cleaned.pkl')
         global_dataset = load_pkl(dataset_path)
 

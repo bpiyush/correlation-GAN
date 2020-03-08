@@ -33,6 +33,7 @@ class WGAN_GP():
     def __init__(self, config):
 
         self.config = config
+        self.data_config = self.config.data_config
         self.latent_dim = config.model['latent_dim']
         self.n_critic = config.model['n_critic']
         self.gamma = config.hyperparams['gamma']
@@ -42,8 +43,8 @@ class WGAN_GP():
 
         self.steps = 0
         self.max_samples = MAX_SAMPLES
-        if self.max_samples > config.data['size']:
-            self.max_samples = config.data['size']
+        if self.max_samples > config.data_config['size']:
+            self.max_samples = config.data_config['size']
         self._fixed_z = torch.randn(self.max_samples, self.latent_dim)
         self.hist = []
 
@@ -57,7 +58,7 @@ class WGAN_GP():
     def _build_model(self):
         device = torch.device('cuda')
 
-        data_dimension = self.config.data['dimension']
+        data_dimension = self.config.data_config['dimension']
         generator_hidden_layers = self.config.model['generator_hidden_layers']
         use_dropout = self.config.model['use_dropout']
         drop_prob = self.config.model['drop_prob']

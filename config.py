@@ -23,10 +23,12 @@ class Config(object):
         config_path = join(self.paths['HOME'], 'configs', arch, version)
         self.__dict__.update(read_yml(config_path))
 
+        self.data_config = self.load_data_config()
+
         self.data['sample_num'] = self.__dict__.get('data').get('sample_num', 500)
         self.data['sample_run'] = self.__dict__.get('data').get('sample_run', False)
         if self.data['sample_run']:
-            self.data['size'] = self.data['sample_num']
+            self.data_config['size'] = self.data['sample_num']
         self.data['preprocess'] = self.__dict__.get('data').get('preprocess', False)
 
         # set default seed
@@ -57,6 +59,14 @@ class Config(object):
         for key in keys:
             dir_dict[key] = eval(key)
         return dir_dict
+
+    def load_data_config(self):
+        data_type, dataset_name = self.data['type'], self.data['name']
+        data_config_path = join(self.paths['HOME'], 'configs/data/{}/{}.yml'.format(data_type, dataset_name))
+        data_config = read_yml(data_config_path)
+
+        return data_config
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

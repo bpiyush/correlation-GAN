@@ -30,8 +30,9 @@ class DCGAN(object):
         super(DCGAN, self).__init__()
         self.config = config
 
-        _data_related_attrs = ['dimension', 'size', 'rho', 'preprocess']
-        self.read_attributes_from_config('data', _data_related_attrs)
+        self.preprocess = self.config.data['preprocess']
+        _data_related_attrs = ['dimension', 'size']
+        self.read_attributes_from_config('data_config', _data_related_attrs)
 
         _model_related_attrs = ['noise_dim', 'num_channels_prefinal', 'n_critic', 'num_channels_first', 'num_layers', 'use_batch_norm', 'use_init', 'last_layer_activation']
         self.read_attributes_from_config('model', _model_related_attrs)
@@ -54,8 +55,8 @@ class DCGAN(object):
             self.G = self.G.to(self.device)
 
         self.max_samples = MAX_SAMPLES
-        if self.max_samples > config.data['size']:
-            self.max_samples = config.data['size']
+        if self.max_samples > config.data_config['size']:
+            self.max_samples = config.data_config['size']
 
         self.fixed_Z = torch.randn(self.max_samples, self.noise_dim)
         if self.use_cuda:
