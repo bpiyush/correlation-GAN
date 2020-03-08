@@ -30,10 +30,10 @@ class DCGAN(object):
         super(DCGAN, self).__init__()
         self.config = config
 
-        _data_related_attrs = ['dimension', 'size', 'rho']
+        _data_related_attrs = ['dimension', 'size', 'rho', 'preprocess']
         self.read_attributes_from_config('data', _data_related_attrs)
 
-        _model_related_attrs = ['noise_dim', 'num_channels_prefinal', 'n_critic', 'num_channels_first', 'num_layers', 'use_batch_norm', 'use_init']
+        _model_related_attrs = ['noise_dim', 'num_channels_prefinal', 'n_critic', 'num_channels_first', 'num_layers', 'use_batch_norm', 'use_init', 'last_layer_activation']
         self.read_attributes_from_config('model', _model_related_attrs)
 
         _hparam_related_attrs = ['g_lr', 'g_betas', 'd_lr', 'd_betas', 'g_weight_decay', 'd_weight_decay']
@@ -83,8 +83,9 @@ class DCGAN(object):
     def _build_model(self):
 
         logger.log("Loading {} network ...".format(colored('deconvolutional generator', 'red')))
+        act = 'tanh' if self.preprocess else None
         self.G = DCGenerator(self.out_h, self.out_w, self.noise_dim, self.num_channels_prefinal,
-                             self.use_batch_norm, num_layers=self.num_layers)
+                             self.use_batch_norm, num_layers=self.num_layers, last_layer_activation=act)
 
         if self.use_init:
             # Apply the weights_init function to randomly initialize all weights to mean=0, stdev=0.2.
@@ -168,7 +169,9 @@ class DCGAN(object):
         loss_dict = {}
 
         ################# D training step ###################
-        real_label, fake_label = 1, 0
+        real_label, fake_label = np.random.uniform(0.9, 1.0), np.random.uniform(0.0, 0.1)
+        if np.random.uniform(0, 1) > 0.8:
+            real_label, fake_label = fake_label, real_label
 
         self.D.zero_grad()
 
@@ -245,9 +248,12 @@ class DCGAN(object):
 
         Z = self.fixed_Z[indices]
         G_Z = self.flatten_image(self.G(Z)).detach().cpu().numpy()
-        X_ = self.postprocess(data_loader, G_Z)
 
-        figure = plot_original_vs_generated(X, X_)
+        if self.config.data['preprocess']:
+            X = self.postprocess(data_loader, X)
+            G_Z = self.postprocess(data_loader, G_Z)
+
+        figure = plot_original_vs_generated(X, G_Z)
         return figure
 
 

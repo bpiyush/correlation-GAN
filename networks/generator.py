@@ -28,7 +28,7 @@ class DCGenerator(nn.Module):
     """
     Class definition of DCGAN generator
     """
-    def __init__(self, out_h, out_w, noise_dim, num_channels_prefinal, use_batch_norm, num_layers=4):
+    def __init__(self, out_h, out_w, noise_dim, num_channels_prefinal, use_batch_norm, num_layers=4, last_layer_activation=None):
         super(DCGenerator, self).__init__()
 
         self.num_layers = num_layers
@@ -44,7 +44,6 @@ class DCGenerator(nn.Module):
         out_features = 4 * num_channels_prefinal * self.size_dict[0]['height'] * self.size_dict[0]['width']
 
         lrelu = nn.LeakyReLU(True)
-        tanh = nn.Tanh()
 
         linear_layer = nn.Linear(in_features=noise_dim, out_features=out_features)
         # batch_norm_for_linear_layer = self.batch_norm(self.size_dict[0]['channels'])
@@ -75,7 +74,9 @@ class DCGenerator(nn.Module):
             if i < num_layers - 2:
                 self.deconv_net.add_module(name='activation_{}'.format(i + 1), module=lrelu)
 
-        self.deconv_net.add_module(name='activation_{}'.format(num_layers - 1), module=tanh)
+        if last_layer_activation is not None:
+            tanh = nn.Tanh()
+            self.deconv_net.add_module(name='activation_{}'.format(num_layers - 1), module=tanh)
 
 
     def batch_norm(self, output_dim, eps=1e-5, momentum=0.9):
