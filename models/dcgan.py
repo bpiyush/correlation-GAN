@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, '/home/users/piyushb/projects/correlation-GAN')
 from utils.logger import Logger
 from data.dataloader import create_data_loader
-from utils.visualize import plot_original_vs_generated
+from utils.visualize import plot_original_vs_generated, plot_correlation
 from networks.generator import DCGenerator
 from networks.discriminator import DCDiscriminator
 logger = Logger()
@@ -29,6 +29,7 @@ class DCGAN(object):
     def __init__(self, config):
         super(DCGAN, self).__init__()
         self.config = config
+        self.data_config = config.data_config
 
         self.preprocess = self.config.data['preprocess']
         _data_related_attrs = ['dimension', 'size']
@@ -158,8 +159,11 @@ class DCGAN(object):
 
             wandb_logs.update(loss_dict)
 
-            figure = self._get_scatter_plot(data_loader)
-            wandb_logs.update({"Original vs Generated: Scatter plot": wandb.Image(figure)})
+            original_data, generated_data = self._get_original_and_generated_data(data_loader, 200)
+            import ipdb; ipdb.set_trace()
+
+            plots = self._get_visualizations(original_data, generated_data)
+            wandb_logs.update(plots)
             wandb.log(wandb_logs, step=self.global_num_iters)
 
         epoch_d_loss /= self.d_steps; epoch_g_loss /= self.g_steps;
@@ -232,9 +236,9 @@ class DCGAN(object):
     def postprocess(self, data_loader, X):
         dataset = data_loader.dataset
         return dataset.preprocessor.inverse_transform(X)
-        
 
-    def _get_scatter_plot(self, data_loader, samples_to_visualize=200, seed=0):
+
+    def _get_original_and_generated_data(self, data_loader, num_to_load, seed=0):
 
         # setting up models for evaluation
         self.G = self.G.eval()
@@ -243,7 +247,7 @@ class DCGAN(object):
 
         # Fix the seed since we need the same original data across epochs
         np.random.seed(seed)
-        indices = np.random.choice(self.size, size=samples_to_visualize, replace=False)
+        indices = np.random.choice(self.size, size=num_to_load, replace=False)
 
         X = np.array([self.flatten_image(dataset[i]['image']).cpu().numpy() for i in indices])
 
@@ -254,8 +258,20 @@ class DCGAN(object):
             X = self.postprocess(data_loader, X)
             G_Z = self.postprocess(data_loader, G_Z)
 
-        figure = plot_original_vs_generated(X, G_Z)
-        return figure
+        return X, G_Z
+        
+
+    def _get_visualizations(self, original_data, generated_data):
+
+        scatter_plot = plot_original_vs_generated(original_data, generated_data)
+        correlation_plot = plot_correlation(original_data, generated_data, self.data_config['cleaned_columns'])
+
+        plots = {
+            'Original vs Generated: Scatter plot': scatter_plot,
+            'Original vs Generated: Correlation': correlation_plot
+        }
+
+        return plots
 
 
 if __name__ == '__main__':
