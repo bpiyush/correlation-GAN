@@ -2,7 +2,12 @@
 *sftp*
 
 # config files
-v*.yml
+configs/dcgan/v*.yml
+configs/wgan_gp/v*.yml
+configs/backup/
+
+# W&B files
+*wandb*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

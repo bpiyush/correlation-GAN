@@ -1,0 +1,72 @@
+data_type: real
+dataset_name: lacity
+use_subset: true
+
+size      : 18000
+dimension : 33
+num_real: 24
+num_cat: 8
+
+target: hours-per-week
+classifier_label: income
+
+raw_columns:
+    - Row ID
+    - Year
+    - Department Title
+    - Payroll Department
+    - Record Number
+    - Job Class Title
+    - Employment Type
+    - Hourly or Event Rate
+    - Projected Annual Salary
+    - Q1 Payments
+    - Q2 Payments
+    - Q3 Payments
+    - Q4 Payments
+    - Payments Over Base Pay
+    - '% Over Base Pay'
+    - Total Payments
+    - Base Pay
+    - Permanent Bonus Pay
+    - Longevity Bonus Pay
+    - Temporary Bonus Pay
+    - Lump Sum Pay
+    - Overtime Pay
+    - Other Pay & Adjustments
+    - Other Pay (Payroll Explorer)
+    - MOU
+    - MOU Title
+    - FMS Department
+    - Job Class
+    - Pay Grade
+    - Average Health Cost
+    - Average Dental Cost
+    - Average Basic Life
+    - Average Benefit Cost
+    - Benefits Plan
+    - Job Class Link
+
+identifiers:
+    - Row ID
+    - Record Number
+    - Job Class Link 
+
+QIDs:
+    - Benefits Plan
+    - Pay Grade
+    - Department Title
+    - Employment Type
+    - MOU Title
+    - Average Health Cost
+    - Payroll Department
+
+number_of_tokes:
+    Department Title  : 85
+    Job Class Title   : 1147
+    Employment Type   : 3
+    '% Over Base Pay' : 45
+    MOU               : 90
+    MOU Title         : 360
+    Pay Grade         : 48
+    Benefits Plan     : 8

@@ -3,11 +3,11 @@ description: default config
 # Data related configs
 data :
   type      : synthetic
-  name      : gaussian-2d
-  version   : v1
-  size      : 200
-  dimension : 2
-  rho       : 0.5
+  name      : dataset_1
+  sample_run: false
+  sample_num: 500
+  preprocess: False
+  version   : 1
 
 # training related
 training :
@@ -18,6 +18,7 @@ training :
 system:
   num_workers : 10
   use_cuda    : true
+  seed        : 0
 
 # model related configs
 model:
@@ -25,6 +26,7 @@ model:
   drop_prob   : [0.5, 0.5, 0.5]
   use_ac_func : [True, True, False]
   activation  : 'relu'
+  last_layer_activation: null
   latent_dim  : 10
   n_critic    : 2
 

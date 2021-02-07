@@ -1,0 +1,45 @@
+metainfo: 2D Categorical data similar to dataset 5
+dataset_name: dataset_5
+use_subset: False
+
+size      : 5000
+dimension : 10
+num_real: 0
+num_cat: 10
+
+target: cat-4
+classifier_label: cat-10
+
+raw_columns:
+    - cat-1
+    - cat-2
+    - cat-3
+    - cat-4
+    - cat-5
+    - cat-6
+    - cat-7
+    - cat-8
+    - cat-9
+    - cat-10
+
+identifiers:
+
+cleaned_columns:
+    - cat-1
+    - cat-2
+    - cat-3
+    - cat-4
+    - cat-5
+    - cat-6
+    - cat-7
+    - cat-8
+    - cat-9
+    - cat-10
+
+QIDs:
+    - cat-7
+    - cat-8
+    - cat-9
+
+sensitive:
+    - cat-10

@@ -1,0 +1,41 @@
+metainfo: 10D Gaussian dataset with uniformly varying correlations
+dataset_name: dataset_2
+use_subset: False
+
+size      : 5000
+dimension : 10
+num_real: 10
+num_cat: 0
+
+target: real-10
+classifier_label: real-10
+
+raw_columns:
+    - real-1
+    - real-2
+    - real-3
+    - real-4
+    - real-5
+    - real-6
+    - real-7
+    - real-8
+    - real-9
+    - real-10
+
+identifiers:
+
+cleaned_columns:
+    - real-1
+    - real-2
+    - real-3
+    - real-4
+    - real-5
+    - real-6
+    - real-7
+    - real-8
+    - real-9
+    - real-10
+
+QIDs:
+
+sensitive: real-10
